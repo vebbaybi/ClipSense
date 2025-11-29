@@ -1,0 +1,26 @@
+│   │   │   ├── features/                             # Feature modules containing hooks, types and feature logic
+│   │   │   │   ├── batch/                            # Batch domain logic and client side feature code
+│   │   │   │   │   ├── hooks/                        # React hooks specific to batches
+│   │   │   │   │   │   ├── useBatches.ts             # Hook to list, fetch and cache batches for current user
+│   │   │   │   │   │   ├── useBatchUpload.ts         # Hook managing upload flow and UX state for batch creation
+│   │   │   │   │   │   └── useBatchAnalysis.ts       # Hook for polling or subscribing to batch analysis progress
+│   │   │   │   │   ├── types.ts                      # Type definitions for batch domain objects on frontend
+│   │   │   │   │   └── utils.ts                      # Batch specific helpers (formatting, derived values)
+│   │   │   │   ├── clips/                            # Clip domain logic and client side feature code
+│   │   │   │   │   ├── hooks/                        # React hooks specific to clips
+│   │   │   │   │   │   ├── useClips.ts               # Hook to fetch and cache clips for a batch
+│   │   │   │   │   │   ├── useClipFilters.ts         # Hook managing clip filter state and query params
+│   │   │   │   │   │   └── useClipSearch.ts          # Hook for searching clips by text, tags or analysis
+│   │   │   │   │   ├── types.ts                      # Type definitions for clip domain objects on frontend
+│   │   │   │   │   └── utils.ts                      # Clip specific helpers (sorting, derived roles)
+│   │   │   │   ├── storylines/                       # Storyline domain logic and client side feature code
+│   │   │   │   │   ├── hooks/                        # React hooks specific to storylines
+│   │   │   │   │   │   ├── useStorylines.ts          # Hook to load and manage storylines for a batch
+│   │   │   │   │   │   ├── useStorylineGeneration.ts # Hook to trigger AI generation and watch status
+│   │   │   │   │   │   └── useExport.ts              # Hook to call backend export endpoints and manage UI
+│   │   │   │   │   ├── types.ts                      # Type definitions for storyline domain on frontend
+│   │   │   │   │   └── utils.ts                      # Storyline helpers (reordering, scoring, validation)
+│   │   │   │   └── auth/                             # Auth feature logic for frontend
+│   │   │   │       ├── hooks/                        # Auth related hooks
+│   │   │   │       │   └── useAuth.ts                # Hook exposing user session and auth state
+│   │   │   │       └── types.ts                      # Auth related types (session, user, roles)

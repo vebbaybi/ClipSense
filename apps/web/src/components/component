@@ -1,0 +1,31 @@
+│   │   │   ├── components/                           # Presentational and UI components, reusable across routes
+│   │   │   │   ├── ui/                               # Design system primitives (buttons, cards, modals, etc)
+│   │   │   │   │   ├── button.tsx                    # Button component with variants and sizes
+│   │   │   │   │   ├── dialog.tsx                    # Modal dialog component
+│   │   │   │   │   ├── table.tsx                     # Table component for tabular data rendering
+│   │   │   │   │   ├── card.tsx                      # Card component for panels and grouped content
+│   │   │   │   │   ├── progress.tsx                  # Progress bar component (batch processing states, uploads)
+│   │   │   │   │   ├── sidebar.tsx                   # Sidebar shell element used in dashboard layout
+│   │   │   │   │   └── ...                           # Additional base UI primitives (inputs, selects, tabs, etc)
+│   │   │   │   ├── batch/                            # Batch specific UI components
+│   │   │   │   │   ├── BatchUploadZone.tsx           # Drag and drop upload area for new batch zip files
+│   │   │   │   │   ├── BatchOverview.tsx             # Batch overview panel (stats, charts, summary)
+│   │   │   │   │   ├── BatchProcessingStatus.tsx     # Live status component for analysis progress
+│   │   │   │   │   └── BatchList.tsx                 # List of existing batches for the user on dashboard
+│   │   │   │   ├── clips/                            # Clip specific UI components
+│   │   │   │   │   ├── ClipCard.tsx                  # Individual clip card with thumbnail and key metadata
+│   │   │   │   │   ├── ClipGrid.tsx                  # Grid or list container rendering multiple ClipCards
+│   │   │   │   │   ├── ClipFilters.tsx               # Filter bar for role, mood, topic and search
+│   │   │   │   │   ├── ClipPreview.tsx               # Video preview player for a single clip
+│   │   │   │   │   └── ClipAnalysisPanel.tsx         # Panel showing transcript and AI analysis for a clip
+│   │   │   │   ├── storylines/                       # Storyline editor and related components
+│   │   │   │   │   ├── StorylineList.tsx             # List of AI suggested and manual storylines
+│   │   │   │   │   ├── StorylineEditor.tsx           # Main editor for arranging clips in a storyline
+│   │   │   │   │   ├── StorylineTimeline.tsx         # Timeline like visual representation of clip order
+│   │   │   │   │   ├── NarrativeArc.tsx              # Graph showing energy or narrative arc over time
+│   │   │   │   │   ├── ManualArrangement.tsx         # Manual arrangement UI for drag and drop story building
+│   │   │   │   │   └── ExportPanel.tsx               # Panel to export storyline as JSON, CSV or EDL
+│   │   │   │   └── layout/                           # Layout level components
+│   │   │   │       ├── AppShell.tsx                  # Overall application shell (sidebar, header, main)
+│   │   │   │       ├── Navigation.tsx                # Top or side navigation component
+│   │   │   │       └── UserMenu.tsx                  # User profile dropdown and session controls

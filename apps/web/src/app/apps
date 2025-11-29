@@ -1,0 +1,27 @@
+│   │   │   ├── app/                                   # Next.js app router entrypoint and route tree
+│   │   │   │   ├── (dashboard)/                       # Authenticated dashboard layout group for main app shell
+│   │   │   │   │   ├── page.tsx                      # Default dashboard landing page (recent batches, quick actions)
+│   │   │   │   │   └── layout.tsx                    # Layout for dashboard area (sidebar, header, main content)
+│   │   │   │   ├── batches/                           # Route segment for all batch related pages
+│   │   │   │   │   ├── [id]/                         # Dynamic route for a specific batch by id
+│   │   │   │   │   │   ├── page.tsx                  # Batch root view, likely redirects to overview or remembers last tab
+│   │   │   │   │   │   ├── overview/                 # Batch overview tab route
+│   │   │   │   │   │   │   └── page.tsx              # Batch overview page (stats, distributions, summary)
+│   │   │   │   │   │   ├── clips/                    # Batch clips tab route
+│   │   │   │   │   │   │   └── page.tsx              # Batch clips page (clip list, filters, preview)
+│   │   │   │   │   │   ├── storylines/               # Batch storylines tab route
+│   │   │   │   │   │   │   └── page.tsx              # Batch storylines page (AI sequences, manual editor)
+│   │   │   │   │   │   └── layout.tsx                # Layout wrapper for a single batch (tabs, batch header)
+│   │   │   │   │   └── new/                          # Route for creating a new batch
+│   │   │   │   │       └── page.tsx                  # New batch upload wizard (zip upload, settings)
+│   │   │   │   ├── settings/                         # Route for user account and app settings
+│   │   │   │   │   └── page.tsx                      # Settings page (profile, auth, preferences)
+│   │   │   │   ├── api/                              # Next.js route handlers for web specific API endpoints
+│   │   │   │   │   ├── upload/                       # File upload API scope for the web app
+│   │   │   │   │   │   └── route.ts                  # Upload endpoint (streams zip to backend or object storage)
+│   │   │   │   │   └── auth/                         # Auth route scope for NextAuth or custom auth handlers
+│   │   │   │   │       └── [...nextauth]/            # NextAuth dynamic route segment
+│   │   │   │   │           └── route.ts              # NextAuth route config (providers, callbacks)
+│   │   │   │   ├── globals.css                       # Global CSS injection for legacy or app level styles
+│   │   │   │   ├── layout.tsx                        # Top level app layout (html, body, theme providers)
+│   │   │   │   └── page.tsx                          # Public landing page (marketing, sign in link, docs link)

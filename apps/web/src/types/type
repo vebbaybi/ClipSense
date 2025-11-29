@@ -1,0 +1,4 @@
+│   │   │   ├── types/                                # Global type definitions used across the web app
+│   │   │   │   ├── api.ts                            # Types for API payloads and responses
+│   │   │   │   ├── domain.ts                         # Shared domain models mirrored from backend
+│   │   │   │   └── ui.ts                             # UI specific types (props, layout configs)

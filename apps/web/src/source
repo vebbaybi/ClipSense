@@ -1,0 +1,118 @@
+│   │   ├── src/                                       # Source code for the web app
+│   │   │   ├── app/                                   # Next.js app router entrypoint and route tree
+│   │   │   │   ├── (dashboard)/                       # Authenticated dashboard layout group for main app shell
+│   │   │   │   │   ├── page.tsx                      # Default dashboard landing page (recent batches, quick actions)
+│   │   │   │   │   └── layout.tsx                    # Layout for dashboard area (sidebar, header, main content)
+│   │   │   │   ├── batches/                           # Route segment for all batch related pages
+│   │   │   │   │   ├── [id]/                         # Dynamic route for a specific batch by id
+│   │   │   │   │   │   ├── page.tsx                  # Batch root view, likely redirects to overview or remembers last tab
+│   │   │   │   │   │   ├── overview/                 # Batch overview tab route
+│   │   │   │   │   │   │   └── page.tsx              # Batch overview page (stats, distributions, summary)
+│   │   │   │   │   │   ├── clips/                    # Batch clips tab route
+│   │   │   │   │   │   │   └── page.tsx              # Batch clips page (clip list, filters, preview)
+│   │   │   │   │   │   ├── storylines/               # Batch storylines tab route
+│   │   │   │   │   │   │   └── page.tsx              # Batch storylines page (AI sequences, manual editor)
+│   │   │   │   │   │   └── layout.tsx                # Layout wrapper for a single batch (tabs, batch header)
+│   │   │   │   │   └── new/                          # Route for creating a new batch
+│   │   │   │   │       └── page.tsx                  # New batch upload wizard (zip upload, settings)
+│   │   │   │   ├── settings/                         # Route for user account and app settings
+│   │   │   │   │   └── page.tsx                      # Settings page (profile, auth, preferences)
+│   │   │   │   ├── api/                              # Next.js route handlers for web specific API endpoints
+│   │   │   │   │   ├── upload/                       # File upload API scope for the web app
+│   │   │   │   │   │   └── route.ts                  # Upload endpoint (streams zip to backend or object storage)
+│   │   │   │   │   └── auth/                         # Auth route scope for NextAuth or custom auth handlers
+│   │   │   │   │       └── [...nextauth]/            # NextAuth dynamic route segment
+│   │   │   │   │           └── route.ts              # NextAuth route config (providers, callbacks)
+│   │   │   │   ├── globals.css                       # Global CSS injection for legacy or app level styles
+│   │   │   │   ├── layout.tsx                        # Top level app layout (html, body, theme providers)
+│   │   │   │   └── page.tsx                          # Public landing page (marketing, sign in link, docs link)
+│   │   │   ├── components/                           # Presentational and UI components, reusable across routes
+│   │   │   │   ├── ui/                               # Design system primitives (buttons, cards, modals, etc)
+│   │   │   │   │   ├── button.tsx                    # Button component with variants and sizes
+│   │   │   │   │   ├── dialog.tsx                    # Modal dialog component
+│   │   │   │   │   ├── table.tsx                     # Table component for tabular data rendering
+│   │   │   │   │   ├── card.tsx                      # Card component for panels and grouped content
+│   │   │   │   │   ├── progress.tsx                  # Progress bar component (batch processing states, uploads)
+│   │   │   │   │   ├── sidebar.tsx                   # Sidebar shell element used in dashboard layout
+│   │   │   │   │   └── ...                           # Additional base UI primitives (inputs, selects, tabs, etc)
+│   │   │   │   ├── batch/                            # Batch specific UI components
+│   │   │   │   │   ├── BatchUploadZone.tsx           # Drag and drop upload area for new batch zip files
+│   │   │   │   │   ├── BatchOverview.tsx             # Batch overview panel (stats, charts, summary)
+│   │   │   │   │   ├── BatchProcessingStatus.tsx     # Live status component for analysis progress
+│   │   │   │   │   └── BatchList.tsx                 # List of existing batches for the user on dashboard
+│   │   │   │   ├── clips/                            # Clip specific UI components
+│   │   │   │   │   ├── ClipCard.tsx                  # Individual clip card with thumbnail and key metadata
+│   │   │   │   │   ├── ClipGrid.tsx                  # Grid or list container rendering multiple ClipCards
+│   │   │   │   │   ├── ClipFilters.tsx               # Filter bar for role, mood, topic and search
+│   │   │   │   │   ├── ClipPreview.tsx               # Video preview player for a single clip
+│   │   │   │   │   └── ClipAnalysisPanel.tsx         # Panel showing transcript and AI analysis for a clip
+│   │   │   │   ├── storylines/                       # Storyline editor and related components
+│   │   │   │   │   ├── StorylineList.tsx             # List of AI suggested and manual storylines
+│   │   │   │   │   ├── StorylineEditor.tsx           # Main editor for arranging clips in a storyline
+│   │   │   │   │   ├── StorylineTimeline.tsx         # Timeline like visual representation of clip order
+│   │   │   │   │   ├── NarrativeArc.tsx              # Graph showing energy or narrative arc over time
+│   │   │   │   │   ├── ManualArrangement.tsx         # Manual arrangement UI for drag and drop story building
+│   │   │   │   │   └── ExportPanel.tsx               # Panel to export storyline as JSON, CSV or EDL
+│   │   │   │   └── layout/                           # Layout level components
+│   │   │   │       ├── AppShell.tsx                  # Overall application shell (sidebar, header, main)
+│   │   │   │       ├── Navigation.tsx                # Top or side navigation component
+│   │   │   │       └── UserMenu.tsx                  # User profile dropdown and session controls
+│   │   │   ├── features/                             # Feature modules containing hooks, types and feature logic
+│   │   │   │   ├── batch/                            # Batch domain logic and client side feature code
+│   │   │   │   │   ├── hooks/                        # React hooks specific to batches
+│   │   │   │   │   │   ├── useBatches.ts             # Hook to list, fetch and cache batches for current user
+│   │   │   │   │   │   ├── useBatchUpload.ts         # Hook managing upload flow and UX state for batch creation
+│   │   │   │   │   │   └── useBatchAnalysis.ts       # Hook for polling or subscribing to batch analysis progress
+│   │   │   │   │   ├── types.ts                      # Type definitions for batch domain objects on frontend
+│   │   │   │   │   └── utils.ts                      # Batch specific helpers (formatting, derived values)
+│   │   │   │   ├── clips/                            # Clip domain logic and client side feature code
+│   │   │   │   │   ├── hooks/                        # React hooks specific to clips
+│   │   │   │   │   │   ├── useClips.ts               # Hook to fetch and cache clips for a batch
+│   │   │   │   │   │   ├── useClipFilters.ts         # Hook managing clip filter state and query params
+│   │   │   │   │   │   └── useClipSearch.ts          # Hook for searching clips by text, tags or analysis
+│   │   │   │   │   ├── types.ts                      # Type definitions for clip domain objects on frontend
+│   │   │   │   │   └── utils.ts                      # Clip specific helpers (sorting, derived roles)
+│   │   │   │   ├── storylines/                       # Storyline domain logic and client side feature code
+│   │   │   │   │   ├── hooks/                        # React hooks specific to storylines
+│   │   │   │   │   │   ├── useStorylines.ts          # Hook to load and manage storylines for a batch
+│   │   │   │   │   │   ├── useStorylineGeneration.ts # Hook to trigger AI generation and watch status
+│   │   │   │   │   │   └── useExport.ts              # Hook to call backend export endpoints and manage UI
+│   │   │   │   │   ├── types.ts                      # Type definitions for storyline domain on frontend
+│   │   │   │   │   └── utils.ts                      # Storyline helpers (reordering, scoring, validation)
+│   │   │   │   └── auth/                             # Auth feature logic for frontend
+│   │   │   │       ├── hooks/                        # Auth related hooks
+│   │   │   │       │   └── useAuth.ts                # Hook exposing user session and auth state
+│   │   │   │       └── types.ts                      # Auth related types (session, user, roles)
+│   │   │   ├── hooks/                                # Shared, generic React hooks
+│   │   │   │   ├── useWebSocket.ts                   # Hook to manage WebSocket connections (status updates)
+│   │   │   │   ├── useFileUpload.ts                  # Hook to manage file uploads with progress
+│   │   │   │   ├── useDebounce.ts                    # Debounce hook for inputs and search
+│   │   │   │   └── useLocalStorage.ts                # Hook wrapping browser localStorage with React state
+│   │   │   ├── lib/                                  # Frontend library utilities not tied to React
+│   │   │   │   ├── api/                              # HTTP and WebSocket client utilities
+│   │   │   │   │   ├── client.ts                     # API client wrapper (fetch or axios with auth, base url)
+│   │   │   │   │   ├── websocket.ts                  # WebSocket client helper for real time updates
+│   │   │   │   │   └── endpoints.ts                  # Central definition of API endpoint paths
+│   │   │   │   ├── auth/                             # Auth configuration helpers
+│   │   │   │   │   ├── config.ts                     # Auth config (providers info, callback urls)
+│   │   │   │   │   └── session.ts                    # Session helpers (token extraction, SSR hooks)
+│   │   │   │   ├── utils/                            # Generic utility functions
+│   │   │   │   │   ├── formatters.ts                 # Formatting utilities (dates, durations, labels)
+│   │   │   │   │   ├── validators.ts                 # Validation helpers for forms and inputs
+│   │   │   │   │   └── video.ts                      # Video specific utilities (thumbnail selection, timecodes)
+│   │   │   │   └── constants.ts                      # Global frontend constants (feature flags, limits)
+│   │   │   ├── stores/                               # Client side state management stores (Zustand, Redux, etc)
+│   │   │   │   ├── authStore.ts                      # Store for auth state (user, tokens, loading flags)
+│   │   │   │   ├── batchStore.ts                     # Store for selected batch and batch level UI state
+│   │   │   │   ├── clipStore.ts                      # Store for clip list state, filters and selections
+│   │   │   │   └── storylineStore.ts                 # Store for storyline editing state and selection
+│   │   │   ├── types/                                # Global type definitions used across the web app
+│   │   │   │   ├── api.ts                            # Types for API payloads and responses
+│   │   │   │   ├── domain.ts                         # Shared domain models mirrored from backend
+│   │   │   │   └── ui.ts                             # UI specific types (props, layout configs)
+│   │   │   └── styles/                               # CSS and theme configuration
+│   │   │       ├── globals.css                       # App wide stylesheet used by Next.js
+│   │   │       ├── components.css                    # Component level or utility styles
+│   │   │       └── themes/                           # Theme variants and tokens
+│   │   │           ├── dark.css                      # Dark theme overrides
+│   │   │           └── light.css                     # Light theme overrides

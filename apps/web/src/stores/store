@@ -1,0 +1,5 @@
+│   │   │   ├── stores/                               # Client side state management stores (Zustand, Redux, etc)
+│   │   │   │   ├── authStore.ts                      # Store for auth state (user, tokens, loading flags)
+│   │   │   │   ├── batchStore.ts                     # Store for selected batch and batch level UI state
+│   │   │   │   ├── clipStore.ts                      # Store for clip list state, filters and selections
+│   │   │   │   └── storylineStore.ts                 # Store for storyline editing state and selection

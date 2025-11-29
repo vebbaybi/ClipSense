@@ -1,0 +1,464 @@
+# CLIPSENSE ROADMAP
+
+## PHASE 1 — Foundational Core (MVP)
+
+**Goal:**
+Get from:
+`ZIP upload → transcripts + summaries + tags → visible clips in UI.`
+No storylines. No embeddings. Just understanding.
+
+### Scope
+
+1. **ZIP upload and batch creation**
+2. **Worker pipeline: unzip → audio → transcription → basic NLP**
+3. **Minimal UI: batches list, batch detail, clip list, clip detail**
+4. **Basic status (polling is enough)**
+
+### Main areas in repo
+
+#### Frontend (Next.js)
+
+* `apps/web/src/app/batches/new/page.tsx`
+  Upload page where user selects or drags ZIP.
+
+* `apps/web/src/components/batch/BatchUploadZone.tsx`
+  Handles drag and drop, calls API, shows progress.
+
+* `apps/web/src/lib/api/endpoints.ts`
+  Define `POST /api/upload` (or whatever route the backend exposes).
+
+* `apps/web/src/features/batch/useBatchUpload.ts`
+  Hook to orchestrate upload + redirect.
+
+* `apps/web/src/app/(dashboard)/page.tsx`
+  Dashboard listing recent batches once they exist.
+
+* `apps/web/src/components/batch/BatchList.tsx`
+  Renders batches returned from API.
+
+* `apps/web/src/app/batches/[id]/overview/page.tsx`
+  Batch detail page with high level info.
+
+* `apps/web/src/app/batches/[id]/clips/page.tsx`
+  Batch clips page displaying all clips for that batch.
+
+* `apps/web/src/components/clips/ClipCard.tsx`
+  Thumbnail, title, basic tags.
+
+* `apps/web/src/components/clips/ClipAnalysisPanel.tsx`
+  Summary + topic + mood + transcript (collapsible).
+
+* `apps/web/src/features/batch/useBatches.ts`
+
+* `apps/web/src/features/clips/useClips.ts`
+  Data fetching hooks for batches and clips.
+
+* `apps/web/src/lib/api/client.ts`
+  Shared HTTP client wrapper.
+
+#### API (Go backend)
+
+* `apps/api/internal/http/handlers/upload.go`
+  Accepts ZIP file, validates, stores, calls `batch_service`.
+
+* `apps/api/internal/services/batch_service.go`
+
+  * Creates `batch` record in Postgres.
+  * Sets initial status: `pending` → `processing` → `ready`.
+
+* `apps/api/internal/services/storage_service.go`
+  Saves ZIP to S3/local (`data/temp/uploads/` in dev).
+
+* `apps/api/internal/jobs/queue.go`
+  Pushes a `BatchProcessingJob` into Redis.
+
+* `apps/api/internal/jobs/batch_processing_job.go`
+  Defines job payload: batch ID, storage path, etc.
+
+* `apps/api/internal/http/handlers/batches.go`
+
+  * `GET /batches` for dashboard
+  * `GET /batches/{id}` for batch overview
+
+* `apps/api/internal/http/handlers/clips.go`
+
+  * `GET /batches/{id}/clips` for clip list
+  * `GET /clips/{id}` for clip detail
+
+* `apps/api/internal/models/batch.go`
+
+* `apps/api/internal/models/clip.go`
+  Domain structs and helpers.
+
+* `apps/api/internal/repositories/postgres/batch_repo.go`
+
+* `apps/api/internal/repositories/postgres/clip_repo.go`
+  DB CRUD.
+
+* `migrations/0001_init_schema.*.sql`
+  Create core tables: `users`, `batches`, `clips`, `clip_analysis_basic`.
+
+#### AI Worker (Python)
+
+* `apps/ai_worker/clipsense_worker/main.py`
+  Entry: start queue consumer, process batch jobs.
+
+* `apps/ai_worker/clipsense_worker/io/queue/consumer.py`
+  Connect to Redis/Rabbit, pull `BatchProcessingJob`.
+
+* `apps/ai_worker/clipsense_worker/batching/batch_processor.py`
+
+  * Unzip batch
+  * Enumerate video files
+  * For each: create `ClipProcessor` tasks.
+
+* `apps/ai_worker/clipsense_worker/batching/clip_processor.py`
+  For each clip:
+
+  * Use FFmpeg to extract audio
+
+    * via `clipsense_worker/utils/ffmpeg.py`
+  * Run ASR (Whisper)
+
+    * `clipsense_worker/asr/whisper.py`
+  * Generate summary / topic / mood
+
+    * `clipsense_worker/nlp/summarization/openai.py`
+    * `clipsense_worker/nlp/classification/*_classifier.py`
+
+* `apps/ai_worker/clipsense_worker/persistence/api_sync.py`
+  Sends `clip` + `clip_analysis` back to Go API.
+
+* `apps/ai_worker/clipsense_worker/models/clip_analysis.py`
+  Internal representation of the analysis before sync.
+
+#### Infra
+
+* `infra/docker/docker-compose.dev.yml`
+  Bring up: web, api, worker, postgres, redis, minio.
+
+* `data/temp/uploads/`
+  Dev local staging for uploads.
+
+---
+
+## PHASE 2 — Storyline Engine v1 (Embeddings + basic ordering)
+
+**Goal:**
+Go from “list of analyzed clips” to **“AI ordered list”**, not yet sophisticated but better than random/chronological.
+
+### Scope
+
+1. Add embeddings + vector DB
+2. Implement basic similarity based ordering
+3. Provide first “AI Storyline” in UI
+4. Introduce storylines tables and endpoints
+
+### Main areas in repo
+
+#### Backend / Data
+
+* `migrations/0002_add_vector_embeddings.*.sql`
+
+  * Add embedding reference to `clip_analysis` or separate `clip_embeddings` table.
+  * Add `storylines` table with `storyline_clips` join.
+
+* `apps/api/internal/models/storyline.go`
+
+* `apps/api/internal/repositories/postgres/storyline_repo.go`
+
+* `apps/api/internal/http/handlers/storylines.go`
+
+  * `GET /batches/{id}/storylines`
+  * `POST /batches/{id}/storylines/ai` — trigger AI generation
+
+* `apps/api/internal/services/storyline_service.go`
+
+  * Persist storylines
+  * Represent an ordered list of clips + metadata.
+
+#### AI Worker
+
+* `apps/ai_worker/clipsense_worker/embeddings/base.py`
+
+* `apps/ai_worker/clipsense_worker/embeddings/openai.py`
+  Compute embeddings from transcripts / summaries.
+
+* `apps/ai_worker/clipsense_worker/embeddings/vector_db/base.py`
+
+* `apps/ai_worker/clipsense_worker/embeddings/vector_db/qdrant.py`
+  Interact with Qdrant / Pinecone.
+
+* `apps/ai_worker/clipsense_worker/story_engine/graph_builder.py`
+  Build similarity graph (node=clip, edge weight=similarity).
+
+* `apps/ai_worker/clipsense_worker/story_engine/sequence_scorer.py`
+  Initial simplistic scoring: favor smoother transitions.
+
+* `apps/ai_worker/clipsense_worker/story_engine/storyline_generator.py`
+  Generate basic AI storyline per batch (e.g., sorted by similarity chain).
+
+* `apps/ai_worker/clipsense_worker/persistence/api_sync.py`
+  Extended to sync storylines back to API.
+
+* `apps/ai_worker/clipsense_worker/models/storyline.py`
+  Internal representation.
+
+#### Frontend
+
+* `apps/web/src/app/batches/[id]/storylines/page.tsx`
+  Page showing list of storylines for the batch.
+
+* `apps/web/src/components/storylines/StorylineList.tsx`
+  Renders available AI + manual storylines.
+
+* `apps/web/src/components/storylines/StorylineTimeline.tsx`
+  Simple vertical list or pseudo-timeline.
+
+* `apps/web/src/features/storylines/useStorylines.ts`
+  Fetch list of storylines per batch.
+
+* `apps/web/src/features/storylines/useStorylineGeneration.ts`
+  Trigger AI generation, poll for completion.
+
+* `apps/web/src/lib/api/endpoints.ts`
+  Add storyline endpoints mapping.
+
+---
+
+## PHASE 3 — Narrative Intelligence & Director Mode
+
+**Goal:**
+Upgrade from “similarity-based ordering” to **“narrative-aware storylines”** with roles, arcs, and explanations.
+
+### Scope
+
+1. Role classification (intro, buildup, climax, etc.)
+2. Narrative arc scoring (energy curve)
+3. Multiple storyline strategies
+4. AI explanation of produced storyline
+
+### AI Worker
+
+* `apps/ai_worker/clipsense_worker/nlp/classification/role_classifier.py`
+  Assigns each clip a “role” label.
+
+* `apps/ai_worker/clipsense_worker/nlp/sentiment/analyzer.py`
+  Detects emotional intensity / sentiment.
+
+* `apps/ai_worker/clipsense_worker/story_engine/narrative_arc.py`
+  Uses moods, sentiment, role to score energy/pacing.
+
+* `apps/ai_worker/clipsense_worker/story_engine/storyline_generator.py`
+  Extended to produce:
+
+  * Narrative-focused storyline
+  * High-energy-first
+  * Emotion-driven variant
+
+* `apps/ai_worker/clipsense_worker/story_engine/prompts.py`
+  LLM prompts to generate human-readable “why this order works”.
+
+* `apps/ai_worker/clipsense_worker/models/batch_analysis.py`
+  Capture distributions: roles, moods, themes per batch.
+
+### Backend
+
+* `apps/api/internal/models/analysis.go`
+  Extended to store role, mood, energy, etc.
+
+* `apps/api/internal/models/storyline.go`
+  Add: type (e.g. `balanced`, `high_energy`, `emotional`), explanation text.
+
+* `apps/api/internal/http/handlers/storylines.go`
+  `GET /storylines/{id}` -> include explanation + arc data.
+
+### Frontend
+
+* `apps/web/src/components/storylines/NarrativeArc.tsx`
+  Draw energy curve across the clip order.
+
+* `apps/web/src/components/storylines/StorylineEditor.tsx`
+  Show explanation, allow reordering, inspect clips in context.
+
+* `apps/web/src/components/batch/BatchOverview.tsx`
+  Integrate batch-level insights: role distribution, mood distribution.
+
+---
+
+## PHASE 4 — Creator Tools + Editor Integration
+
+**Goal:**
+Move from “interesting AI demo” into “real tool editors rely on”.
+
+### Scope
+
+1. Export formats (JSON, CSV, EDL/XML)
+2. Basic collab support (shared batches)
+3. Global search across clips
+
+### Backend
+
+* `apps/api/internal/http/handlers/storylines.go`
+  Add export endpoints:
+
+  * `GET /storylines/{id}/export?format=json|csv|edl|xml`
+
+* `apps/api/internal/services/storyline_service.go`
+  Implement export formatting.
+
+* `apps/api/internal/models/user.go` + migrations
+  Add ownership, teams, shared access.
+
+* `apps/api/internal/http/handlers/users.go`
+  Manage team/permissions.
+
+### AI Worker
+
+Minimal changes; mostly backend format generation.
+
+### Frontend
+
+* `apps/web/src/components/storylines/ExportPanel.tsx`
+  UI to choose export format.
+
+* `apps/web/src/components/layout/UserMenu.tsx`
+  Show team, workspace, etc.
+
+* `apps/web/src/features/clips/useClipSearch.ts`
+  Expanded to global search.
+
+* `apps/web/src/app/(dashboard)/page.tsx`
+  Add global search bar.
+
+---
+
+## PHASE 5 — Multimodal & Rust Acceleration
+
+**Goal:**
+Handle heavier workloads and multimodal comprehension.
+
+### New directory (Rust service)
+
+You may add:
+
+```text
+apps/
+  video_engine/                      # Rust-based video processing microservice
+    src/
+      main.rs                        # Server entry
+      ffmpeg_adapter.rs              # Fast video/audio operations
+      scene_detection.rs             # Scene boundaries
+      metrics.rs                     # Telemetry
+    Cargo.toml
+    Dockerfile
+```
+
+### Worker integration
+
+* `apps/ai_worker/clipsense_worker/utils/video.py`
+  Calls the Rust service via HTTP/gRPC instead of raw FFmpeg in Python.
+
+* `apps/ai_worker/clipsense_worker/story_engine`
+  Incorporate scene boundaries and visual cues into arc modeling.
+
+### Backend / Infra
+
+* `infra/docker/video_engine.Dockerfile`
+
+* `infra/docker/docker-compose.dev.yml`
+  Add video_engine service.
+
+* `infra/k8s/...`
+  Add deployment and service definitions.
+
+---
+
+## PHASE 6 — Platform Integrations
+
+**Goal:**
+Bring in content directly from platforms.
+
+### Backend
+
+* `apps/api/internal/http/handlers/integrations.go`
+  `POST /integrations/twitch/import`, `POST /integrations/youtube/import`, etc.
+
+* `apps/api/internal/services/storage_service.go`
+  Extended to fetch from external URLs instead of only ZIP.
+
+* `docs/api/rest-api.md`
+  Document integration flows.
+
+### Frontend
+
+* `apps/web/src/app/settings/page.tsx`
+  Connect Twitch/YouTube accounts.
+
+* `apps/web/src/components/settings/IntegrationSection.tsx`
+  Manage platform tokens and import buttons.
+
+---
+
+## PHASE 7 — Enterprise Features
+
+**Goal:**
+Enterprise readiness.
+
+### Backend
+
+* SSO / SAML:
+
+  * `apps/api/internal/auth/oauth.go`
+  * New `apps/api/internal/auth/saml.go` (if needed).
+
+* Rate limiting / quotas:
+
+  * `apps/api/internal/http/middleware/auth.go`
+  * `apps/api/internal/http/middleware/limits.go`.
+
+* Tenant-level models and isolation:
+
+  * `apps/api/internal/models/user.go` + migrations
+  * `apps/api/internal/models/tenant.go`.
+
+### Frontend
+
+* `apps/web/src/app/settings/page.tsx`
+  Enterprise-tier configs.
+
+* `apps/web/src/components/layout/AppShell.tsx`
+  Tenant-aware branding if required.
+
+---
+
+## PHASE 8 — Continuous Optimization
+
+**Goal:**
+Cost reduction, speed improvements, model refinement.
+
+### AI Worker
+
+* Swap some OpenAI calls with local models:
+
+  * `nlp/summarization/local.py`
+  * `nlp/classification/local.py`
+  * `embeddings/local.py`.
+
+* Add caching for repeated clips / reuploads:
+
+  * `persistence/cache.py`.
+
+### Backend
+
+* Optimize queries in:
+
+  * `postgres/*_repo.go`.
+
+### Infra
+
+* `infra/monitoring/prometheus.yml`
+* `infra/monitoring/grafana/dashboards/`
+  Add detailed latency, queue depth, GPU usage, etc.
+
+--

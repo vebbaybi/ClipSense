@@ -1,0 +1,194 @@
+│   ├── api/                                          # Go backend service providing REST and WebSocket APIs
+│   │   ├── cmd/                                      # Entry points for building binaries
+│   │   │   └── clipsense-api/                        # Main API binary folder
+│   │   │       ├── main.go                           # Main function bootstrapping the API server
+│   │   │       └── wire.go                           # Dependency injection wiring (if using google wire or similar)
+│   │   ├── internal/                                 # Private packages for API business logic
+│   │   │   ├── http/                                 # HTTP layer (handlers, middleware, routing)
+│   │   │   │   ├── handlers/                         # Endpoint handlers grouped by domain
+│   │   │   │   │   ├── batches.go                    # Handlers for batch CRUD and retrieval
+│   │   │   │   │   ├── clips.go                      # Handlers for clip listing and details
+│   │   │   │   │   ├── storylines.go                 # Handlers for storyline CRUD and generation triggers
+│   │   │   │   │   ├── users.go                      # Handlers for user profile and account endpoints
+│   │   │   │   │   ├── upload.go                     # Handlers for receiving uploads or pre signed URLs
+│   │   │   │   │   └── websocket.go                  # Handlers for WebSocket upgrade and event streams
+│   │   │   │   ├── middleware/                       # HTTP middleware for cross cutting concerns
+│   │   │   │   │   ├── auth.go                       # Auth middleware (JWT, API key, session validation)
+│   │   │   │   │   ├── cors.go                       # CORS configuration middleware
+│   │   │   │   │   ├── logging.go                    # Request logging middleware
+│   │   │   │   │   └── recovery.go                   # Panic recovery and error normalization
+│   │   │   │   ├── routes/                           # HTTP route registration
+│   │   │   │   │   └── routes.go                     # Router setup mapping paths to handlers
+│   │   │   │   └── server.go                         # HTTP server startup, graceful shutdown, config wiring
+│   │   │   ├── services/                             # Application services implementing core use cases
+│   │   │   │   ├── batch_service.go                  # Batch service (create batch, track status, summary)
+│   │   │   │   ├── clip_service.go                   # Clip service (associate, query, analysis status)
+│   │   │   │   ├── storyline_service.go              # Storyline service (store sequences, attach metadata)
+│   │   │   │   ├── user_service.go                   # User service (profiles, limits, billing hooks)
+│   │   │   │   ├── storage_service.go                # File storage abstraction service (local or cloud)
+│   │   │   │   └── job_service.go                    # Job service to enqueue and track async jobs
+│   │   │   ├── repositories/                         # Data access layer abstractions
+│   │   │   │   ├── postgres/                         # Postgres specific repository implementations
+│   │   │   │   │   ├── batch_repo.go                 # Batch persistence (insert, update, query)
+│   │   │   │   │   ├── clip_repo.go                  # Clip persistence (insert, update, query)
+│   │   │   │   │   ├── user_repo.go                  # User persistence (insert, update, query)
+│   │   │   │   │   ├── storyline_repo.go             # Storyline persistence (insert, update, query)
+│   │   │   │   │   └── migrations/                   # SQL migrations for Postgres schema
+│   │   │   │   ├── vector/                           # Vector database client implementations
+│   │   │   │   │   ├── pinecone_client.go            # Pinecone adapter implementing vector repo interface
+│   │   │   │   │   └── qdrant_client.go              # Qdrant adapter implementing vector repo interface
+│   │   │   │   └── cache/                            # Cache layer clients
+│   │   │   │       └── redis_client.go               # Redis client for caching and rate limiting
+│   │   │   ├── models/                               # Domain models for backend entities
+│   │   │   │   ├── batch.go                          # Batch model struct and methods
+│   │   │   │   ├── clip.go                           # Clip model struct and methods
+│   │   │   │   ├── user.go                           # User model struct and methods
+│   │   │   │   ├── storyline.go                      # Storyline model struct and methods
+│   │   │   │   ├── analysis.go                       # Analysis model (roles, moods, embeddings metadata)
+│   │   │   │   └── job.go                            # Async job model (type, payload, state)
+│   │   │   ├── auth/                                 # Auth helpers and credential handling
+│   │   │   │   ├── jwt.go                            # JWT token generation and verification
+│   │   │   │   ├── session.go                        # Session management helpers
+│   │   │   │   ├── oauth.go                          # OAuth provider integration helpers
+│   │   │   │   └── api_key.go                        # API key generation and validation
+│   │   │   ├── jobs/                                 # Job queue abstraction and job definitions
+│   │   │   │   ├── queue.go                          # Queue interface wrapping Redis or NATS
+│   │   │   │   ├── processor.go                      # Job processor loop and dispatch logic
+│   │   │   │   ├── batch_processing_job.go           # Job definition for processing an entire batch
+│   │   │   │   └── clip_analysis_job.go              # Job definition for processing a single clip
+│   │   │   ├── config/                               # Configuration loading and environment helpers
+│   │   │   │   ├── config.go                         # Root config struct and loader
+│   │   │   │   ├── database.go                       # Database specific configuration and init logic
+│   │   │   │   ├── storage.go                        # Storage backend config (local, S3)
+│   │   │   │   └── ai.go                             # AI service config (model providers, timeouts)
+│   │   │   ├── storage/                              # Storage backend adapters
+│   │   │   │   ├── local_storage.go                  # Local filesystem storage implementation
+│   │   │   │   ├── s3_storage.go                     # S3 or S3 compatible storage implementation
+│   │   │   │   └── interface.go                      # Storage interface used by services
+│   │   │   ├── utils/                                # Generic backend utilities
+│   │   │   │   ├── fileutils.go                      # Helper functions for file operations
+│   │   │   │   ├── validation.go                     # Input validation helpers
+│   │   │   │   └── helpers.go                        # Misc generic helpers
+│   │   │   └── events/                               # Domain event publishing and subscription
+│   │   │       ├── publisher.go                      # Abstraction for publishing events
+│   │   │       ├── subscriber.go                     # Abstraction for listening to events
+│   │   │       └── types.go                          # Event payload types and constants
+│   │   ├── pkg/                                      # Reusable packages that could be shared across services
+│   │   │   ├── logger/                               # Logging utilities
+│   │   │   │   └── logger.go                         # Structured logger setup (zap, logrus, etc)
+│   │   │   ├── database/                             # Database connection helpers
+│   │   │   │   └── postgres.go                       # Postgres connection pool and setup
+│   │   │   └── queue/                                # Queue client abstractions
+│   │   │       ├── redisq.go                         # Redis based queue implementation
+│   │   │       └── nats.go                           # NATS based queue implementation (optional)
+│   │   ├── api/                                      # API definition artifacts
+│   │   │   ├── openapi.yaml                          # OpenAPI spec for REST endpoints
+│   │   │   └── swagger.yaml                          # Swagger definition (if needed separately)
+│   │   ├── migrations/                               # Database migrations for this service (mirrors root migrations)
+│   │   ├── tests/                                    # Backend tests
+│   │   │   ├── integration/                          # Integration tests hitting DB and external services
+│   │   │   └── unit/                                 # Unit tests for services and handlers
+│   │   ├── go.mod                                    # Go module definition for API service
+│   │   ├── go.sum                                    # Go module dependencies lockfile
+│   │   ├── Dockerfile                                # Dockerfile for building API container image
+│   │   └── Makefile                                  # Makefile shortcuts for build, test and run
+│   │
+│   └── ai_worker/                                    # Python based AI pipeline worker service
+│       ├── clipsense_worker/                         # Python package implementing worker logic
+│       │   ├── __init__.py                           # Package init file
+│       │   ├── main.py                               # Worker entrypoint (starts consumers, schedulers)
+│       │   ├── config/                               # Worker configuration package
+│       │   │   ├── __init__.py                       # Config package init
+│       │   │   ├── settings.py                       # Central settings object (env parsing, defaults)
+│       │   │   ├── models.py                         # Config models (pydantic or dataclasses)
+│       │   │   └── paths.py                          # Paths and directory resolution helpers
+│       │   ├── io/                                   # IO adapters (storage, queues, API clients)
+│       │   │   ├── __init__.py                       # IO package init
+│       │   │   ├── storage/                          # Storage backend adapters for worker
+│       │   │   │   ├── base.py                       # Abstract storage interface
+│       │   │   │   ├── local.py                      # Local filesystem storage implementation
+│       │   │   │   ├── s3.py                         # S3 based storage implementation
+│       │   │   │   └── factory.py                    # Factory to build storage client from config
+│       │   │   ├── queue/                            # Queue consumers and producers
+│       │   │   │   ├── base.py                       # Abstract queue interface
+│       │   │   │   ├── redis.py                      # Redis queue implementation
+│       │   │   │   ├── rabbitmq.py                   # RabbitMQ implementation (optional)
+│       │   │   │   └── consumer.py                   # Job consumer loop linking queue to pipeline
+│       │   │   └── api_client.py                     # HTTP client for calling API service to sync results
+│       │   ├── asr/                                  # Audio extraction and transcription modules
+│       │   │   ├── __init__.py                       # ASR package init
+│       │   │   ├── base.py                           # Abstract ASR interface
+│       │   │   ├── whisper.py                        # Local Whisper based ASR implementation
+│       │   │   ├── assemblyai.py                     # AssemblyAI service integration
+│       │   │   ├── deepgram.py                       # Deepgram service integration
+│       │   │   └── utils.py                          # Helpers for audio chunks, language hints
+│       │   ├── nlp/                                  # NLP pipeline for summaries, roles, mood, topics
+│       │   │   ├── __init__.py                       # NLP package init
+│       │   │   ├── summarization/                    # Summarization modules
+│       │   │   │   ├── base.py                       # Abstract summarizer interface
+│       │   │   │   ├── openai.py                     # OpenAI based summarization implementation
+│       │   │   │   ├── local.py                      # Local model summarizer implementation
+│       │   │   │   └── prompts.py                    # Prompt templates for summarization calls
+│       │   │   ├── classification/                   # Classification modules for roles, mood, topics
+│       │   │   │   ├── base.py                       # Abstract classifier interface
+│       │   │   │   ├── role_classifier.py            # Clip role classifier logic
+│       │   │   │   ├── mood_classifier.py            # Mood classifier logic
+│       │   │   │   ├── topic_classifier.py           # Topic classifier logic
+│       │   │   │   └── prompts.py                    # Prompt templates for classification calls
+│       │   │   ├── sentiment/                        # Sentiment and emotion analysis
+│       │   │   │   └── analyzer.py                   # Sentiment analyzer implementation
+│       │   │   └── utils.py                          # Shared NLP helpers (tokenization, chunking)
+│       │   ├── embeddings/                           # Embedding generation and vector db interactions
+│       │   │   ├── __init__.py                       # Embeddings package init
+│       │   │   ├── base.py                           # Abstract embedding model interface
+│       │   │   ├── openai.py                         # OpenAI embeddings integration
+│       │   │   ├── local.py                          # Local embedding model implementation
+│       │   │   └── vector_db/                        # Vector database adapters
+│       │   │       ├── base.py                       # Abstract vector database interface
+│       │   │       ├── pinecone.py                   # Pinecone adapter
+│       │   │       ├── qdrant.py                     # Qdrant adapter
+│       │   │       └── weaviate.py                   # Weaviate adapter
+│       │   ├── story_engine/                         # Storyline generation and scoring engine
+│       │   │   ├── __init__.py                       # Story engine package init
+│       │   │   ├── graph_builder.py                  # Builds graph of clips based on similarity and roles
+│       │   │   ├── sequence_scorer.py                # Scores candidate clip sequences
+│       │   │   ├── narrative_arc.py                  # Models and computes narrative arc and pacing
+│       │   │   ├── storyline_generator.py            # Generates candidate storylines over clips
+│       │   │   └── prompts.py                        # Prompt templates for explanations or titles
+│       │   ├── batching/                             # Batch orchestration and pipeline assembly
+│       │   │   ├── __init__.py                       # Batching package init
+│       │   │   ├── batch_processor.py                # High level orchestration for processing a batch of clips
+│       │   │   ├── clip_processor.py                 # Per clip processing stages (ASR, NLP, embeddings)
+│       │   │   └── orchestrator.py                   # Orchestrates job dependencies and progress tracking
+│       │   ├── persistence/                          # Write back results to API or DB
+│       │   │   ├── __init__.py                       # Persistence package init
+│       │   │   ├── api_sync.py                       # Sync analysis results via API calls
+│       │   │   ├── db_writer.py                      # Direct database writing (if worker has DB access)
+│       │   │   └── cache.py                          # Caching of intermediate results (embeddings, transcripts)
+│       │   ├── models/                               # Internal data models used in worker
+│       │   │   ├── __init__.py                       # Models package init
+│       │   │   ├── clip_analysis.py                  # Clip analysis model (summary, roles, embeddings refs)
+│       │   │   ├── batch_analysis.py                 # Batch level analysis model (distributions, clusters)
+│       │   │   ├── storyline.py                      # Storyline model used inside worker
+│       │   │   └── events.py                         # Event payload models between worker and API
+│       │   ├── utils/                                # Generic utilities for worker
+│       │   │   ├── __init__.py                       # Utils package init
+│       │   │   ├── audio.py                          # Audio processing helpers (normalization, slicing)
+│       │   │   ├── video.py                          # Video helpers (metadata, duration)
+│       │   │   ├── ffmpeg.py                         # FFmpeg wrapper helpers
+│       │   │   ├── logging.py                        # Worker logging setup
+│       │   │   └── metrics.py                        # Metrics collection (timings, counters)
+│       │   └── cli/                                  # Command line tools for local debugging and ops
+│       │       ├── __init__.py                       # CLI package init
+│       │       ├── debug.py                          # Commands to debug single clip or single batch processing
+│       │       ├── test_pipeline.py                  # End to end pipeline test command
+│       │       └── benchmark.py                      # Benchmarking tools for throughput and latency
+│       ├── tests/                                    # Test suite for worker
+│       │   ├── unit/                                 # Unit tests for individual modules
+│       │   ├── integration/                          # Integration tests that hit external services or DB
+│       │   └── fixtures/                             # Test fixtures for transcripts, clips and responses
+│       ├── pyproject.toml                            # Python project config (build system, dependencies)
+│       ├── requirements.txt                          # Pinned dependencies list for runtime
+│       ├── Dockerfile                                # Dockerfile for AI worker container image
+│       ├── Makefile                                  # Makefile for worker specific commands (test, lint, run)
+│       └── README.md                                 # Worker specific documentation and quickstart

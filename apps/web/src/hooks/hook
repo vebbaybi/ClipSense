@@ -1,0 +1,5 @@
+│   │   │   ├── hooks/                                # Shared, generic React hooks
+│   │   │   │   ├── useWebSocket.ts                   # Hook to manage WebSocket connections (status updates)
+│   │   │   │   ├── useFileUpload.ts                  # Hook to manage file uploads with progress
+│   │   │   │   ├── useDebounce.ts                    # Debounce hook for inputs and search
+│   │   │   │   └── useLocalStorage.ts                # Hook wrapping browser localStorage with React state

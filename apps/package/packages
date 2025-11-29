@@ -1,0 +1,35 @@
+├── packages/                                         # Shared libraries and generated SDKs for all services
+│   ├── schemas/                                      # API and data schema definitions as source of truth
+│   │   ├── openapi/                                  # OpenAPI definitions for REST APIs
+│   │   │   ├── clipsense.yaml                        # Main OpenAPI spec for Clipsense API
+│   │   │   └── generated/                            # Generated artifacts from OpenAPI (clients, docs)
+│   │   ├── protobuf/                                 # Protobuf definitions for gRPC or internal events
+│   │   │   ├── clipsense/                            # Clipsense specific proto package
+│   │   │   │   ├── v1/                               # Versioned API definitions
+│   │   │   │   │   ├── batch.proto                   # Batch proto schema
+│   │   │   │   │   ├── clip.proto                    # Clip proto schema
+│   │   │   │   │   └── storyline.proto               # Storyline proto schema
+│   │   │   │   └── events.proto                      # Events proto schema for internal messaging
+│   │   │   └── generated/                            # Generated proto code outputs
+│   │   └── jsonschema/                               # JSON Schema definitions for validation
+│   │       ├── batch.schema.json                     # JSON schema for batch objects
+│   │       ├── clip.schema.json                      # JSON schema for clip objects
+│   │       ├── storyline.schema.json                 # JSON schema for storyline objects
+│   │       └── analysis.schema.json                  # JSON schema for analysis payloads
+│   ├── ts-sdk/                                       # TypeScript SDK used by web or external clients
+│   │   ├── src/                                      # SDK source code
+│   │   │   ├── client.ts                             # HTTP client wrapper generated or hand written
+│   │   │   ├── resources/                            # Per resource API client modules
+│   │   │   │   ├── batches.ts                        # Typed client for batch endpoints
+│   │   │   │   ├── clips.ts                          # Typed client for clip endpoints
+│   │   │   │   └── storylines.ts                     # Typed client for storyline endpoints
+│   │   │   ├── types.ts                              # Shared TypeScript types for SDK responses
+│   │   │   └── index.ts                              # SDK public export surface
+│   │   ├── package.json                              # SDK npm package definition
+│   │   └── tsconfig.json                             # TypeScript config for SDK
+│   └── go-sdk/                                       # Go SDK for backend or external consumers
+│       ├── internal/                                 # Internal SDK utilities
+│       │   └── client/                               # Low level client code (transport, config)
+│       ├── clipsense.go                              # Public Go SDK entrypoint
+│       ├── go.mod                                    # Go module definition for SDK
+│       └── go.sum                                    # Go SDK dependencies lockfile
