@@ -1,13 +1,1 @@
-│   │   │   ├── lib/                                  # Frontend library utilities not tied to React
-│   │   │   │   ├── api/                              # HTTP and WebSocket client utilities
-│   │   │   │   │   ├── client.ts                     # API client wrapper (fetch or axios with auth, base url)
-│   │   │   │   │   ├── websocket.ts                  # WebSocket client helper for real time updates
-│   │   │   │   │   └── endpoints.ts                  # Central definition of API endpoint paths
-│   │   │   │   ├── auth/                             # Auth configuration helpers
-│   │   │   │   │   ├── config.ts                     # Auth config (providers info, callback urls)
-│   │   │   │   │   └── session.ts                    # Session helpers (token extraction, SSR hooks)
-│   │   │   │   ├── utils/                            # Generic utility functions
-│   │   │   │   │   ├── formatters.ts                 # Formatting utilities (dates, durations, labels)
-│   │   │   │   │   ├── validators.ts                 # Validation helpers for forms and inputs
-│   │   │   │   │   └── video.ts                      # Video specific utilities (thumbnail selection, timecodes)
-│   │   │   │   └── constants.ts                      # Global frontend constants (feature flags, limits)
+// Legacy blueprint removed. Actual API utilities live in src/lib/api/*.ts

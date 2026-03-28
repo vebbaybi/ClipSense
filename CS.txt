@@ -498,14 +498,14 @@ clipsense/                                             # Monorepo root for all C
 │
 ├── scripts/                                          # Top level scripts shared by repo tooling
 │   ├── dev/                                          # Developer environment scripts
-│   │   ├── start-dev.sh                              # Script to start local dev stack
-│   │   ├── stop-dev.sh                               # Script to stop local dev stack
-│   │   └── reset-dev.sh                              # Script to reset dev environment (containers, volumes)
+│   │   ├── start-dev.sh                              # Script to start local dev stack (docker compose up --build)
+│   │   ├── stop-dev.sh                               # Script to stop local dev stack (docker compose down)
+│   │   └── reset-dev.sh                              # Script to reset dev environment (down -v, clear data)
 │   ├── build/                                        # Build and packaging scripts
-│   │   ├── build-all.sh                              # Script to build all services and SDKs
-│   │   └── package-release.sh                        # Script to package a release artifact
+│   │   ├── build-all.sh                              # Script to build all services (docker compose build)
+│   │   └── package-release.sh                        # Script to package images into a tarball
 │   ├── database/                                     # Database management scripts
-│   │   ├── backup.sh                                 # Script to back up database
+│   │   ├── backup.sh                                 # Script to back up SQLite DB
 │   │   └── restore.sh                                # Script to restore database backups
 │   └── utils/                                        # Misc utility scripts
 │       ├── generate-secrets.sh                       # Script to generate random secrets and keys
@@ -522,3 +522,15 @@ clipsense/                                             # Monorepo root for all C
 ├── CONTRIBUTING.md                                   # Contribution guidelines for collaborators
 ├── SECURITY.md                                       # Security policy and disclosure instructions
 └── LICENSE                                           # License for the Clipsense project
+
+IMPLEMENTATION-NOTE 2026-03-27
+- Web app implemented at apps/web with Next.js 14, Tailwind, upload + dashboard pages.
+- API implemented at apps/api (Go, chi, SQLite) with /api/health, /api/batches (list/create), /api/batches/{id}.
+- AI worker implemented at apps/api/ai_worker (Python, Whisper, sentence-transformers, ffmpeg) polling SQLite for pending batches and writing clips + storylines.
+- Data directories: data/uploads, data/processing, data/clipsense.db (SQLite).
+
+ORCHESTRATION 2026-03-27
+- Added docker-compose.yml (web, api, worker sharing volume clipsense-data).
+- Added service Dockerfiles: apps/api/Dockerfile, apps/api/ai_worker/Dockerfile, apps/web/Dockerfile.
+- Added .env.example with defaults for API, worker, web.
+

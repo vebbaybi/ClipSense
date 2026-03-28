@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: radial-gradient(120% 120% at 20% 20%, rgba(99,102,241,0.12), transparent),
+              radial-gradient(120% 120% at 80% 0%, rgba(14,165,233,0.18), transparent),
+              #0f172a;
+}
+
+.btn {
+  @apply inline-flex items-center gap-2 rounded-md px-4 py-2 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900;
+}
+.btn-primary {
+  @apply bg-indigo-500 text-white hover:bg-indigo-400;
+}
+.btn-secondary {
+  @apply bg-slate-800 text-slate-100 hover:bg-slate-700;
+}
+.card {
+  @apply rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-slate-900/50;
+}
+input, select, textarea {
+  @apply w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500;
+}
+label { @apply text-sm text-slate-300; }

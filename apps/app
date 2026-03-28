@@ -1,3 +1,5 @@
+IMPLEMENTATION: MVP code now lives in apps/web, apps/api, apps/api/ai_worker (2026-03-27).
+
 ├── apps/                                              # Runtime applications (web frontend, backend API, AI worker)
 │   ├── web/                                           # Next.js app for the Clipsense web UI (React + TypeScript)
 │   │   ├── src/                                       # Source code for the web app

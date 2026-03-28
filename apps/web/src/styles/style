@@ -1,6 +1,1 @@
-│   │   │   └── styles/                               # CSS and theme configuration
-│   │   │       ├── globals.css                       # App wide stylesheet used by Next.js
-│   │   │       ├── components.css                    # Component level or utility styles
-│   │   │       └── themes/                           # Theme variants and tokens
-│   │   │           ├── dark.css                      # Dark theme overrides
-│   │   │           └── light.css                     # Light theme overrides
+// Deprecated placeholder removed. Styles now live in app/globals.css and Tailwind utilities.

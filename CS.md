@@ -362,3 +362,30 @@ This structure ensures:
 
 **ClipSense is an intelligent pre-editor that transforms raw piles of creator videos into organized, meaningful, story-driven sequences — automatically and beautifully.**
 
+---
+
+# **11. Implementation Snapshot (2026-03-27)**
+
+We now ship a runnable MVP covering web UI (Next.js/TS), Go API (SQLite), and Python AI worker (Whisper + sentence-transformers). Mobile clients are deferred to the next milestone.
+
+* **Web** (`apps/web`): Next.js 14 app-router, Tailwind, drag-and-drop ZIP upload, dashboard list, batch detail with clips + AI storyline.
+* **API** (`apps/api`): Go (chi) REST service with SQLite persistence; endpoints for health, batch list/create, batch detail (clips + storylines); file uploads stored to `data/uploads`; automatic schema migration on boot.
+* **AI Worker** (`apps/api/ai_worker`): Python loop polling SQLite for pending batches; unzips, runs ffmpeg audio extraction, Whisper transcription, sentence-transformer embeddings, KMeans clustering, generates an AI storyline, writes back to DB, marks batch complete.
+* **Data flow**: Upload (web) → `/api/batches` (Go saves zip + inserts batch[pending]) → worker picks pending → processes → inserts clips + storyline → marks batch complete → web dashboard reflects status via live fetch.
+* **Defaults**: `DB_PATH=data/clipsense.db`, `UPLOAD_DIR=data/uploads`, `PROCESS_DIR=data/processing`, `API_ADDR=:8080`, `NEXT_PUBLIC_API_URL=http://localhost:8080`.
+* **Prereqs**: ffmpeg available on PATH; Python deps from `apps/api/ai_worker/requirements.txt`; Go 1.21+; Node 18+ for web.
+
+# **12. Orchestration**
+
+Docker-compose now brings up web, API, and worker with a shared data volume:
+
+```
+docker-compose up --build
+```
+
+Services:
+* `api`: Go server on :8080 (SQLite + uploads under shared volume)
+* `worker`: Python processor polling the same DB and uploads
+* `web`: Next.js app on :3000 using `NEXT_PUBLIC_API_URL=http://api:8080`
+
+Shared volume `clipsense-data` ensures API and worker operate on the same SQLite file and uploads.
