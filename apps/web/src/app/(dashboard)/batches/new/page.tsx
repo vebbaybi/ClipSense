@@ -45,8 +45,9 @@ export default function NewBatchPage() {
         <input {...getInputProps()} />
         <p className="text-lg font-semibold">Drop a .zip of clips here</p>
         <p className="text-slate-400 text-sm">We unpack, analyze, and generate storylines automatically.</p>
-        <button disabled={uploading} className="btn btn-primary mt-4">{uploading ? 'Uploading…' : 'Select file'}</button>
+        <button disabled={uploading} className="btn btn-primary mt-4">{uploading ? 'Uploading...' : 'Select file'}</button>
       </div>
     </div>
   )
 }
+

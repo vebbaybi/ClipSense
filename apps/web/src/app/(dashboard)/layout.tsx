@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 // DashboardLayout provides the authenticated shell (sidebar + main content).
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default function DashboardLayout({ children }: { children?: ReactNode }) {
   return (
     <div className="min-h-screen grid md:grid-cols-[240px_1fr]">
       <aside className="border-r border-slate-800 bg-slate-950/80 p-4 space-y-4">

@@ -4,13 +4,13 @@
 
 **Goal:**
 Get from:
-`ZIP upload → transcripts + summaries + tags → visible clips in UI.`
-No storylines. No embeddings. Just understanding.
+`source intake → stored source asset → extracted video asset(s) → transcripts + summaries + tags → visible clips in UI.`
+The intended product intake model supports public/user-provided video links, direct video uploads, and ZIP archives. The current MVP implementation may stabilize ZIP upload first, but the architecture should not create a ZIP-only downstream pipeline. No advanced storylines. No advanced embeddings. Just understanding.
 
 ### Scope
 
-1. **ZIP upload and batch creation**
-2. **Worker pipeline: unzip → audio → transcription → basic NLP**
+1. **Source intake and batch creation**
+2. **Worker pipeline: normalize source input → video asset(s) → audio → transcription → basic NLP**
 3. **Minimal UI: batches list, batch detail, clip list, clip detail**
 4. **Basic status (polling is enough)**
 
@@ -19,7 +19,7 @@ No storylines. No embeddings. Just understanding.
 #### Frontend (Next.js)
 
 * `apps/web/src/app/batches/new/page.tsx`
-  Upload page where user selects or drags ZIP.
+  Current MVP upload page where the first implemented source type is ZIP.
 
 * `apps/web/src/components/batch/BatchUploadZone.tsx`
   Handles drag and drop, calls API, shows progress.
@@ -59,7 +59,7 @@ No storylines. No embeddings. Just understanding.
 #### API (Go backend)
 
 * `apps/api/internal/http/handlers/upload.go`
-  Accepts ZIP file, validates, stores, calls `batch_service`.
+  Accepts a source input, validates it, stores it, calls `batch_service`. The current MVP implementation starts with ZIP files.
 
 * `apps/api/internal/services/batch_service.go`
 
@@ -67,7 +67,7 @@ No storylines. No embeddings. Just understanding.
   * Sets initial status: `pending` → `processing` → `ready`.
 
 * `apps/api/internal/services/storage_service.go`
-  Saves ZIP to S3/local (`data/temp/uploads/` in dev).
+  Saves source assets to S3/local (`data/temp/uploads/` in dev).
 
 * `apps/api/internal/jobs/queue.go`
   Pushes a `BatchProcessingJob` into Redis.
@@ -108,7 +108,7 @@ No storylines. No embeddings. Just understanding.
 
 * `apps/ai_worker/clipsense_worker/batching/batch_processor.py`
 
-  * Unzip batch
+  * Normalize source input into one or more video assets
   * Enumerate video files
   * For each: create `ClipProcessor` tasks.
 
@@ -461,4 +461,4 @@ Cost reduction, speed improvements, model refinement.
 * `infra/monitoring/grafana/dashboards/`
   Add detailed latency, queue depth, GPU usage, etc.
 
---
+---

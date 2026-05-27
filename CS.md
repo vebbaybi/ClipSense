@@ -3,13 +3,19 @@
 ## **1. Purpose of ClipSense**
 
 ClipSense is an AI-powered video intelligence system built specifically for streamers, content creators, and editors who work with large sets of reaction videos, clip dumps, gameplay captures, or long-form session recordings.
-In simple terms, ClipSense allows creators to upload a ZIP file containing multiple videos, then the system:
+In simple terms, ClipSense allows creators to submit video sources, then the system:
 
 * **Understands** each clip using NLP and multimodal analysis
 * **Classifies** clips by content, vibe, context, and role
 * **Finds relationships** between clips
 * **Arranges** them into coherent storylines
 * **Helps creators export** sequences into editing tools or manual workflows
+
+ClipSense uses a unified intake model. Public or user-provided video links, direct uploaded video files, and ZIP archives should all normalize into the same internal pipeline:
+
+`source input -> stored source asset -> extracted video asset(s) -> metadata -> transcript -> analysis -> highlights/risk/context/storyline`
+
+The current MVP implementation starts with ZIP upload, but ZIP is not the only intended product path.
 
 ClipSense reduces hours of watching, sorting, guessing, and organizing down to minutes.
 
@@ -47,7 +53,7 @@ The stack is split deliberately:
 
 The creator interface where users:
 
-* Upload batches of clips (ZIP)
+* Upload or submit video sources: links, direct video files, or ZIP batches
 * View clip library and metadata
 * Explore AI analysis (roles, moods, summaries)
 * Review and edit storylines
@@ -130,7 +136,7 @@ Rust is used only where raw performance matters.
 4. **Object Storage (S3/GCS)**
    Stores:
 
-   * Uploaded ZIP files
+   * Uploaded or linked source assets
    * Extracted audio
    * Video files
    * Exports
@@ -151,7 +157,7 @@ Each video goes through a multi-stage intelligent process.
 
 ## **Stage 1 — Ingestion**
 
-User uploads a ZIP → API validates → queue job → stored in object storage.
+User submits a source input → API validates → queue job → stored as a source asset.
 
 ## **Stage 2 — Video Preparation**
 
@@ -244,9 +250,9 @@ Creator gets:
 
 # **6. Usability — How Creators Use ClipSense**
 
-### **1. Upload ZIP**
+### **1. Submit Source**
 
-Drag-and-drop a folder of videos.
+Submit a video link, upload a direct video file, or drag-and-drop a ZIP batch of videos.
 
 ### **2. ClipSense automatically processes**
 
@@ -364,28 +370,33 @@ This structure ensures:
 
 ---
 
-# **11. Implementation Snapshot (2026-03-27)**
+# **11. Implementation Snapshot**
 
-We now ship a runnable MVP covering web UI (Next.js/TS), Go API (SQLite), and Python AI worker (Whisper + sentence-transformers). Mobile clients are deferred to the next milestone.
+The current stabilized MVP covers the web UI (Next.js/TypeScript), Go API, Python AI worker, Postgres, Redis, and Qdrant through Docker Compose. It is ready for local verification/testing, not for the next product roadmap phase.
 
-* **Web** (`apps/web`): Next.js 14 app-router, Tailwind, drag-and-drop ZIP upload, dashboard list, batch detail with clips + AI storyline.
-* **API** (`apps/api`): Go (chi) REST service with SQLite persistence; endpoints for health, batch list/create, batch detail (clips + storylines); file uploads stored to `data/uploads`; automatic schema migration on boot.
-* **AI Worker** (`apps/api/ai_worker`): Python loop polling SQLite for pending batches; unzips, runs ffmpeg audio extraction, Whisper transcription, sentence-transformer embeddings, KMeans clustering, generates an AI storyline, writes back to DB, marks batch complete.
-* **Data flow**: Upload (web) → `/api/batches` (Go saves zip + inserts batch[pending]) → worker picks pending → processes → inserts clips + storyline → marks batch complete → web dashboard reflects status via live fetch.
-* **Defaults**: `DB_PATH=data/clipsense.db`, `UPLOAD_DIR=data/uploads`, `PROCESS_DIR=data/processing`, `API_ADDR=:8080`, `NEXT_PUBLIC_API_URL=http://localhost:8080`.
+* **Web** (`apps/web`): Next.js 14 app-router, Tailwind, current MVP drag-and-drop ZIP upload, dashboard list, batch detail with clips + basic AI storyline visibility.
+* **API** (`apps/api`): Go (chi) REST service with Postgres persistence; endpoints for health, auth, batch list/create, batch detail, and batch export; uploaded source archives are stored under the shared upload volume.
+* **AI Worker** (`apps/api/ai_worker`): Python worker consuming Redis batch jobs; safely extracts supported video files from ZIP archives, runs ffmpeg audio extraction, Whisper transcription, sentence-transformer embeddings, KMeans clustering, writes clips/storylines to Postgres, upserts clip vectors to Qdrant, and marks batches complete or failed.
+* **Current MVP data flow**: ZIP upload (web) → `/api/batches` (Go saves source archive + inserts batch[pending]) → worker picks pending → extracts supported video assets → processes → inserts clips + storyline → marks batch complete → web dashboard reflects status via live fetch.
+* **Current MVP intake limitation**: links and direct single-video uploads are product-intended future intake types, but the current implemented web/API/worker path is ZIP upload only.
+* **Narrative intelligence status**: storyline generation is still basic clustering/order logic, not advanced narrative arc modeling or director-mode reasoning.
+* **Active Docker-facing defaults**: `DATABASE_URL=postgres://clipsense:clipsense@postgres:5432/clipsense?sslmode=disable`, `REDIS_URL=redis://redis:6379`, `QDRANT_HOST=qdrant`, `UPLOAD_DIR=/data/uploads`, `PROCESS_DIR=/data/processing`, `API_ADDR=:8080`, `NEXT_PUBLIC_API_URL=http://localhost:8080`.
 * **Prereqs**: ffmpeg available on PATH; Python deps from `apps/api/ai_worker/requirements.txt`; Go 1.21+; Node 18+ for web.
 
 # **12. Orchestration**
 
-Docker-compose now brings up web, API, and worker with a shared data volume:
+Docker Compose brings up Postgres, Redis, Qdrant, API, worker, and web:
 
 ```
 docker-compose up --build
 ```
 
 Services:
-* `api`: Go server on :8080 (SQLite + uploads under shared volume)
-* `worker`: Python processor polling the same DB and uploads
-* `web`: Next.js app on :3000 using `NEXT_PUBLIC_API_URL=http://api:8080`
+* `postgres`: Postgres database for structured application data.
+* `redis`: Redis queue for batch processing jobs.
+* `qdrant`: Vector database for clip embeddings.
+* `api`: Go server on `:8080`, exposed to the host as `http://localhost:8080`.
+* `worker`: Python processor consuming Redis jobs and using the shared upload/processing volume.
+* `web`: Next.js app on `:3000` using browser-facing `NEXT_PUBLIC_API_URL=http://localhost:8080`.
 
-Shared volume `clipsense-data` ensures API and worker operate on the same SQLite file and uploads.
+Shared volume `clipsense-data` lets the API and worker access uploaded source archives and processing files. Postgres and Qdrant each use their own named volumes.

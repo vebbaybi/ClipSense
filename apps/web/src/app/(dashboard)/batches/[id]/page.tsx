@@ -27,7 +27,7 @@ export default function BatchPage() {
   }, [token, id])
 
   if (!token) { router.replace('/?login=1'); return null }
-  if (!batch) return <div className="card">Loading… {error}</div>
+  if (!batch) return <div className="card">Loading... {error}</div>
 
   return (
     <div className="space-y-6">
@@ -35,7 +35,7 @@ export default function BatchPage() {
         <div>
           <p className="text-sm text-slate-400">Batch</p>
           <h1 className="text-2xl font-semibold">{batch.name}</h1>
-          <p className="text-slate-400 text-sm">{batch.status} · {clips.length} clips</p>
+          <p className="text-slate-400 text-sm">{batch.status} - {clips.length} clips</p>
         </div>
         <a className="btn btn-secondary" href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/batches/${batch.id}/export?format=csv`} target="_blank">Export CSV</a>
       </div>
@@ -46,7 +46,7 @@ export default function BatchPage() {
             <p className="text-sm text-slate-400">{Math.round(clip.duration_seconds)}s</p>
             <h3 className="text-lg font-semibold">{clip.title || clip.filename}</h3>
             <p className="text-slate-300 text-sm line-clamp-3">{clip.summary}</p>
-            <p className="text-xs text-slate-400">Mood: {clip.mood} · Role: {clip.role}</p>
+            <p className="text-xs text-slate-400">Mood: {clip.mood} - Role: {clip.role}</p>
           </div>
         ))}
       </section>
@@ -74,3 +74,4 @@ export default function BatchPage() {
     </div>
   )
 }
+

@@ -57,7 +57,7 @@ export default function DashboardPage() {
               </div>
               <div className="text-right text-sm text-slate-300">
                 <p>{batch.clip_count || 0} clips</p>
-                <p>{batch.duration_seconds ? `${Math.round(batch.duration_seconds/60)} min` : '—'}</p>
+                <p>{batch.duration_seconds ? `${Math.round(batch.duration_seconds/60)} min` : '-'}</p>
               </div>
             </div>
           </Link>
@@ -66,3 +66,4 @@ export default function DashboardPage() {
     </div>
   )
 }
+

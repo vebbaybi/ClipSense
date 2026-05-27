@@ -1,7 +1,6 @@
 package main
 
 import (
-    "bytes"
     "context"
     "database/sql"
     "encoding/csv"
@@ -13,7 +12,7 @@ import (
     "net/http"
     "os"
     "path/filepath"
-    "strconv"
+    "strings"
     "time"
 
     "github.com/go-chi/chi/v5"
@@ -21,16 +20,12 @@ import (
     "github.com/golang-jwt/jwt/v5"
     "github.com/google/uuid"
     _ "github.com/jackc/pgx/v5/stdlib"
-    "github.com/qdrant/go-client/qdrant"
     "github.com/redis/go-redis/v9"
     "golang.org/x/crypto/bcrypt"
-    _ "modernc.org/sqlite"
 )
 
 var db *sql.DB
 var rdb *redis.Client
-var qclient *qdrant.Client
-var driver string
 var jwtSecret []byte
 
 const userKey = "user_id"
@@ -77,11 +72,7 @@ type Storyline struct {
     CreatedAt time.Time `json:"created_at"`
 }
 
-type searchRequest struct { Query string `json:"query"`; Limit int `json:"limit"` }
-type searchResult struct { ID string `json:"id"`; Score float32 `json:"score"`; Payload map[string]any `json:"payload"` }
-
 func main() {
-    driver = getenv("DB_DRIVER", "postgres")
     jwtSecret = []byte(getenv("JWT_SECRET", "dev-secret"))
 
     var err error
@@ -90,18 +81,22 @@ func main() {
     if err := migrate(); err != nil { log.Fatalf("migrate: %v", err) }
 
     redisURL := getenv("REDIS_URL", "redis://redis:6379")
-    rdb, err = redis.NewClient(redisOpts(redisURL)).Ping(context.Background()).Result()
-    if err != nil { log.Fatalf("redis: %v", err) }
-
-    qclient = qdrant.NewClient(getenv("QDRANT_HOST", "qdrant"), qdrant.WithPort(uint16(mustAtoi(getenv("QDRANT_PORT", "6333")))))
+    rdb = redis.NewClient(redisOpts(redisURL))
+    redisCtx, redisCancel := context.WithTimeout(context.Background(), 5*time.Second)
+    if err := rdb.Ping(redisCtx).Err(); err != nil {
+        redisCancel()
+        log.Fatalf("redis ping: %v", err)
+    }
+    redisCancel()
 
     r := chi.NewRouter()
+    r.Use(localDevCORSMiddleware)
     r.Use(middleware.RealIP)
     r.Use(middleware.Logger)
     r.Use(middleware.Recoverer)
 
     r.Route("/api", func(api chi.Router) {
-        api.Get("/health", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
+        api.Get("/health", health)
         api.Post("/auth/register", register)
         api.Post("/auth/login", login)
         api.Group(func(p chi.Router) {
@@ -110,13 +105,81 @@ func main() {
             p.Post("/batches", createBatch)
             p.Get("/batches/{id}", getBatch)
             p.Get("/batches/{id}/export", exportBatch)
-            p.Post("/search", searchClips)
         })
     })
 
     addr := getenv("API_ADDR", ":8080")
     log.Printf("api listening on %s", addr)
     log.Fatal(http.ListenAndServe(addr, r))
+}
+
+func localDevCORSMiddleware(next http.Handler) http.Handler {
+    allowedOrigins := map[string]bool{
+        "http://localhost:3000": true,
+        "http://127.0.0.1:3000": true,
+    }
+    if configured := os.Getenv("CORS_ALLOWED_ORIGINS"); configured != "" {
+        allowedOrigins = map[string]bool{}
+        for _, origin := range strings.Split(configured, ",") {
+            origin = strings.TrimSpace(origin)
+            if origin != "" {
+                allowedOrigins[origin] = true
+            }
+        }
+    }
+
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        origin := r.Header.Get("Origin")
+        if allowedOrigins[origin] {
+            w.Header().Set("Access-Control-Allow-Origin", origin)
+            w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+            w.Header().Set("Vary", "Origin")
+        }
+
+        if r.Method == http.MethodOptions {
+            if origin != "" && !allowedOrigins[origin] {
+                http.Error(w, "cors origin not allowed", http.StatusForbidden)
+                return
+            }
+            w.WriteHeader(http.StatusNoContent)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
+}
+
+func health(w http.ResponseWriter, r *http.Request) {
+    statusCode := http.StatusOK
+    checks := map[string]string{
+        "database": "ok",
+        "redis":    "ok",
+    }
+
+    ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+    defer cancel()
+
+    if err := db.PingContext(ctx); err != nil {
+        checks["database"] = "unavailable"
+        statusCode = http.StatusServiceUnavailable
+        log.Printf("health database unavailable: %v", err)
+    }
+    if err := rdb.Ping(ctx).Err(); err != nil {
+        checks["redis"] = "unavailable"
+        statusCode = http.StatusServiceUnavailable
+        log.Printf("health redis unavailable: %v", err)
+    }
+
+    status := "ok"
+    if statusCode != http.StatusOK {
+        status = "degraded"
+    }
+
+    writeJSONStatus(w, statusCode, map[string]any{
+        "status": status,
+        "checks": checks,
+    })
 }
 
 // Auth
@@ -268,11 +331,15 @@ func createBatch(w http.ResponseWriter, r *http.Request) {
         id, uid, name, destPath, now, now)
     if err != nil { httpError(w, err); return }
 
-    if rdb != nil {
-        job := map[string]string{"id": id, "name": name, "zip_path": destPath}
-        if payload, e := json.Marshal(job); e == nil {
-            if err := rdb.RPush(context.Background(), "jobs:batch", payload).Err(); err != nil { log.Printf("redis enqueue failed: %v", err) }
-        }
+    job := map[string]string{"id": id, "name": name, "zip_path": destPath}
+    payload, err := json.Marshal(job)
+    if err != nil { httpError(w, err); return }
+    enqueueCtx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+    defer cancel()
+    if err := rdb.RPush(enqueueCtx, "jobs:batch", payload).Err(); err != nil {
+        _, _ = db.Exec(`UPDATE batches SET status='failed', updated_at=CURRENT_TIMESTAMP WHERE id=$1`, id)
+        httpError(w, fmt.Errorf("enqueue batch job: %w", err))
+        return
     }
 
     writeJSON(w, map[string]any{"batch": Batch{ID: id, UserID: uid, Name: name, Status: "pending", ZipPath: destPath, CreatedAt: now, UpdatedAt: now}})
@@ -309,50 +376,13 @@ func exportBatch(w http.ResponseWriter, r *http.Request) {
     writeJSON(w, map[string]any{"batch": b, "clips": clips, "storylines": storylines})
 }
 
-func searchClips(w http.ResponseWriter, r *http.Request) {
-    var body searchRequest
-    if err := json.NewDecoder(r.Body).Decode(&body); err != nil { httpError(w, err); return }
-    if body.Limit == 0 { body.Limit = 10 }
-    vec, err := embedText(body.Query)
-    if err != nil { httpError(w, err); return }
-    collection := getenv("QDRANT_COLLECTION", "clipsense_clips")
-    resp, err := qclient.Search(r.Context(), &qdrant.SearchPoints{CollectionName: collection, Vector: vec, Limit: uint64(body.Limit)})
-    if err != nil { httpError(w, err); return }
-    results := make([]searchResult, 0, len(resp.Result))
-    for _, pt := range resp.Result {
-        results = append(results, searchResult{ID: pt.Id.GetUuid(), Score: pt.Score, Payload: pt.Payload})
-    }
-    writeJSON(w, map[string]any{"results": results})
-}
-
-func embedText(text string) ([]float32, error) {
-    key := getenv("OPENAI_API_KEY", "")
-    if key == "" { return make([]float32, 384), nil }
-    payload := map[string]any{"model": "text-embedding-3-small", "input": text}
-    buf, _ := json.Marshal(payload)
-    req, _ := http.NewRequest("POST", "https://api.openai.com/v1/embeddings", bytes.NewReader(buf))
-    req.Header.Set("Authorization", "Bearer "+key)
-    req.Header.Set("Content-Type", "application/json")
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil { return nil, err }
-    defer resp.Body.Close()
-    var data struct { Data []struct { Embedding []float64 `json:"embedding"` } `json:"data"` }
-    if err := json.NewDecoder(resp.Body).Decode(&data); err != nil { return nil, err }
-    if len(data.Data) == 0 { return nil, fmt.Errorf("empty embedding response") }
-    out := make([]float32, len(data.Data[0].Embedding))
-    for i, v := range data.Data[0].Embedding { out[i] = float32(v) }
-    return out, nil
-}
-
 func httpError(w http.ResponseWriter, err error) { log.Println("error", err); http.Error(w, err.Error(), http.StatusInternalServerError) }
-func writeJSON(w http.ResponseWriter, payload any) { w.Header().Set("Content-Type", "application/json"); json.NewEncoder(w).Encode(payload) }
+func writeJSON(w http.ResponseWriter, payload any) { writeJSONStatus(w, http.StatusOK, payload) }
+func writeJSONStatus(w http.ResponseWriter, status int, payload any) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(status)
+    json.NewEncoder(w).Encode(payload)
+}
 func getenv(key, def string) string { if v := os.Getenv(key); v != "" { return v }; return def }
-func ph(i int) string { if driver == "postgres" { return fmt.Sprintf("$%d", i) }; return "?" }
 func ioCopy(dst *os.File, src multipart.File) (int64, error) { return io.Copy(dst, src) }
 func redisOpts(url string) *redis.Options { opt, err := redis.ParseURL(url); if err != nil { return &redis.Options{Addr: "redis:6379"} }; return opt }
-func mustAtoi(s string) int { v, err := strconv.Atoi(s); if err != nil { return 0 }; return v }
-
-type responseRecorder struct { header http.Header; body bytes.Buffer; status int }
-func (r *responseRecorder) Header() http.Header { return r.header }
-func (r *responseRecorder) Write(p []byte) (int, error) { return r.body.Write(p) }
-func (r *responseRecorder) WriteHeader(statusCode int) { r.status = statusCode }

@@ -1,3 +1,5 @@
+NOTE: This file contains a historical/aspirational repository structure reference. It is not a current file inventory. The current MVP implementation note at the bottom is the authoritative summary for the stabilized MVP state.
+
 clipsense/                                             # Monorepo root for all Clipsense code, infra, docs and tooling
 ├── apps/                                              # Runtime applications (web frontend, backend API, AI worker)
 │   ├── web/                                           # Next.js app for the Clipsense web UI (React + TypeScript)
@@ -505,7 +507,7 @@ clipsense/                                             # Monorepo root for all C
 │   │   ├── build-all.sh                              # Script to build all services (docker compose build)
 │   │   └── package-release.sh                        # Script to package images into a tarball
 │   ├── database/                                     # Database management scripts
-│   │   ├── backup.sh                                 # Script to back up SQLite DB
+│   │   ├── backup.sh                                 # Legacy local database backup helper; not the active Docker Compose Postgres backup path
 │   │   └── restore.sh                                # Script to restore database backups
 │   └── utils/                                        # Misc utility scripts
 │       ├── generate-secrets.sh                       # Script to generate random secrets and keys
@@ -523,14 +525,16 @@ clipsense/                                             # Monorepo root for all C
 ├── SECURITY.md                                       # Security policy and disclosure instructions
 └── LICENSE                                           # License for the Clipsense project
 
-IMPLEMENTATION-NOTE 2026-03-27
-- Web app implemented at apps/web with Next.js 14, Tailwind, upload + dashboard pages.
-- API implemented at apps/api (Go, chi, SQLite) with /api/health, /api/batches (list/create), /api/batches/{id}.
-- AI worker implemented at apps/api/ai_worker (Python, Whisper, sentence-transformers, ffmpeg) polling SQLite for pending batches and writing clips + storylines.
-- Data directories: data/uploads, data/processing, data/clipsense.db (SQLite).
+IMPLEMENTATION-NOTE
+- Current MVP web app lives at apps/web with Next.js 14, Tailwind, ZIP upload, dashboard pages, and batch detail views.
+- Current MVP API lives at apps/api (Go, chi, Postgres) with /api/health, auth, /api/batches (list/create), /api/batches/{id}, and batch export.
+- Current MVP AI worker lives at apps/api/ai_worker (Python, Whisper, sentence-transformers, ffmpeg) and consumes Redis batch jobs.
+- Docker Compose uses Postgres, Redis, Qdrant, API, worker, and web. Postgres is the active structured database in the current stack.
+- Product-intended intake includes links, direct video files, and ZIP batches. The current implemented MVP intake path is ZIP upload only.
+- Narrative intelligence is still basic clustering/order logic and is not advanced director-mode reasoning.
 
 ORCHESTRATION 2026-03-27
-- Added docker-compose.yml (web, api, worker sharing volume clipsense-data).
+- docker-compose.yml currently defines Postgres, Redis, Qdrant, API, worker, and web. API and worker share clipsense-data for uploaded source archives and processing files.
 - Added service Dockerfiles: apps/api/Dockerfile, apps/api/ai_worker/Dockerfile, apps/web/Dockerfile.
 - Added .env.example with defaults for API, worker, web.
 

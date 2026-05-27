@@ -1,10 +1,10 @@
 import os
 import time
-import zipfile
 import sqlite3
 import subprocess
 import uuid
 import json
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -15,6 +15,8 @@ from sklearn.cluster import KMeans
 import whisper
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
+
+from zip_safety import extract_zip, media_files
 
 DB_DRIVER = os.getenv('DB_DRIVER', 'postgres')
 DB_PATH = Path(os.getenv('DB_PATH', 'data/clipsense.db'))
@@ -58,18 +60,6 @@ def update_status(conn, batch_id: str, status: str):
 
 def current_timestamp():
     return 'datetime('"'"'now'"'"')' if DB_DRIVER == 'sqlite' else 'CURRENT_TIMESTAMP'
-
-
-def extract_zip(zip_path: Path, dest: Path):
-    with zipfile.ZipFile(zip_path, 'r') as zf:
-        zf.extractall(dest)
-
-
-def media_files(root: Path):
-    exts = {'.mp4', '.mov', '.mkv', '.webm', '.avi'}
-    for p in root.rglob('*'):
-        if p.suffix.lower() in exts:
-            yield p
 
 
 def extract_audio(video_path: Path, out_wav: Path):
@@ -145,68 +135,76 @@ def upsert_embeddings(clip_rows, embeddings):
 
 def process_batch(batch_id: str, name: str, zip_path: Path):
     conn = connect_db()
-    update_status(conn, batch_id, 'processing')
-    workdir = PROCESS_DIR / batch_id
-    workdir.mkdir(parents=True, exist_ok=True)
-    extract_zip(zip_path, workdir)
+    try:
+        update_status(conn, batch_id, 'processing')
+        workdir = PROCESS_DIR / batch_id
+        if workdir.exists():
+            shutil.rmtree(workdir)
+        workdir.mkdir(parents=True, exist_ok=True)
+        extract_zip(zip_path, workdir, logger=log)
 
-    clip_rows = []
-    texts = []
-    for video in media_files(workdir):
-        clip_id = str(uuid.uuid4())
-        audio = workdir / f"{clip_id}.wav"
-        try:
-            extract_audio(video, audio)
-            transcript = transcribe(audio)
-        except Exception as e:
-            log(f"failed {video.name}: {e}")
-            transcript = ""
-        summary = summarize(transcript)
-        mood = classify_mood(transcript)
-        role = classify_role(transcript)
-        duration = duration_seconds(video)
-        clip_rows.append((clip_id, batch_id, video.name, video.stem, summary, transcript, mood, role, 'general', duration))
-        texts.append(transcript if transcript else video.name)
+        videos = list(media_files(workdir))
+        if not videos:
+            raise ValueError("zip contains no supported video files")
 
-    if clip_rows:
-        cur = conn.cursor()
-        cols = "id, batch_id, filename, title, summary, transcript, mood, role, topic, duration_seconds, created_at"
-        values_ph = ','.join([ph(i) for i in range(1, 12)])
-        insert_sql = f"INSERT INTO clips ({cols}) VALUES ({values_ph})"
-        now = datetime.now(timezone.utc)
-        rows_with_time = [row + (now,) for row in clip_rows]
-        cur.executemany(insert_sql, rows_with_time)
-        conn.commit()
+        clip_rows = []
+        texts = []
+        for video in videos:
+            clip_id = str(uuid.uuid4())
+            audio = workdir / f"{clip_id}.wav"
+            try:
+                extract_audio(video, audio)
+                transcript = transcribe(audio)
+            except Exception as e:
+                log(f"failed {video.name}: {e}")
+                transcript = ""
+            summary = summarize(transcript)
+            mood = classify_mood(transcript)
+            role = classify_role(transcript)
+            duration = duration_seconds(video)
+            clip_rows.append((clip_id, batch_id, video.name, video.stem, summary, transcript, mood, role, 'general', duration))
+            texts.append(transcript if transcript else video.name)
 
-    if texts:
-        embeddings = embedder.encode(texts)
-        k = 1 if len(texts) == 1 else min(len(texts), max(2, len(texts)//2))
-        km = KMeans(n_clusters=k, n_init=10)
-        labels = km.fit_predict(embeddings)
-        ordering = sorted(range(len(texts)), key=lambda i: (labels[i], clip_rows[i][9]))
-        cur = conn.cursor()
-        sid = str(uuid.uuid4())
-        cur.execute(
-            f"INSERT INTO storylines (id, batch_id, title, type, created_at) VALUES ({ph(1)}, {ph(2)}, {ph(3)}, {ph(4)}, {ph(5)})",
-            (sid, batch_id, f"AI Sequence for {name}", 'ai_sequence', datetime.now(timezone.utc))
-        )
-        for pos, idx in enumerate(ordering):
+        if clip_rows:
+            cur = conn.cursor()
+            cols = "id, batch_id, filename, title, summary, transcript, mood, role, topic, duration_seconds, created_at"
+            values_ph = ','.join([ph(i) for i in range(1, 12)])
+            insert_sql = f"INSERT INTO clips ({cols}) VALUES ({values_ph})"
+            now = datetime.now(timezone.utc)
+            rows_with_time = [row + (now,) for row in clip_rows]
+            cur.executemany(insert_sql, rows_with_time)
+            conn.commit()
+
+        if texts:
+            embeddings = embedder.encode(texts)
+            k = 1 if len(texts) == 1 else min(len(texts), max(2, len(texts)//2))
+            km = KMeans(n_clusters=k, n_init=10)
+            labels = km.fit_predict(embeddings)
+            ordering = sorted(range(len(texts)), key=lambda i: (labels[i], clip_rows[i][9]))
+            cur = conn.cursor()
+            sid = str(uuid.uuid4())
             cur.execute(
-                f"INSERT INTO storyline_clips (storyline_id, clip_id, position) VALUES ({ph(1)}, {ph(2)}, {ph(3)})",
-                (sid, clip_rows[idx][0], pos)
+                f"INSERT INTO storylines (id, batch_id, title, type, created_at) VALUES ({ph(1)}, {ph(2)}, {ph(3)}, {ph(4)}, {ph(5)})",
+                (sid, batch_id, f"AI Sequence for {name}", 'ai_sequence', datetime.now(timezone.utc))
             )
-        conn.commit()
-        ordered_rows = [clip_rows[idx] for idx in ordering]
-        ordered_embeddings = [embeddings[idx] for idx in ordering]
-        upsert_embeddings(ordered_rows, ordered_embeddings)
+            for pos, idx in enumerate(ordering):
+                cur.execute(
+                    f"INSERT INTO storyline_clips (storyline_id, clip_id, position) VALUES ({ph(1)}, {ph(2)}, {ph(3)})",
+                    (sid, clip_rows[idx][0], pos)
+                )
+            conn.commit()
+            ordered_rows = [clip_rows[idx] for idx in ordering]
+            ordered_embeddings = [embeddings[idx] for idx in ordering]
+            upsert_embeddings(ordered_rows, ordered_embeddings)
 
-    cur = conn.cursor()
-    cur.execute(
-        f"UPDATE batches SET status='complete', clip_count=(SELECT count(*) FROM clips WHERE batch_id = {ph(1)}), updated_at = {current_timestamp()} WHERE id = {ph(2)}",
-        (batch_id, batch_id)
-    )
-    conn.commit()
-    conn.close()
+        cur = conn.cursor()
+        cur.execute(
+            f"UPDATE batches SET status='complete', clip_count=(SELECT count(*) FROM clips WHERE batch_id = {ph(1)}), updated_at = {current_timestamp()} WHERE id = {ph(2)}",
+            (batch_id, batch_id)
+        )
+        conn.commit()
+    finally:
+        conn.close()
     log(f"batch {batch_id} complete")
 
 
@@ -224,7 +222,7 @@ def duration_seconds(video_path: Path) -> float:
 
 def main():
     while True:
-        item = rdb.blpop(0, 'jobs:batch')
+        item = rdb.blpop('jobs:batch', timeout=0)
         if not item:
             time.sleep(1)
             continue
@@ -234,17 +232,26 @@ def main():
             batch_id = data['id']
             name = data.get('name', batch_id)
             zip_path = data['zip_path']
+            if not isinstance(batch_id, str) or not isinstance(zip_path, str):
+                raise ValueError("job id and zip_path must be strings")
         except Exception as e:
-            log(f"invalid job payload {payload}: {e}")
+            log(f"invalid job payload: {e}")
             continue
         log(f"processing batch {batch_id}")
         try:
             process_batch(batch_id, name, Path(zip_path))
         except Exception as e:
             log(f"batch {batch_id} failed: {e}")
-            conn = connect_db()
-            update_status(conn, batch_id, 'failed')
-            conn.close()
+            try:
+                conn = connect_db()
+                update_status(conn, batch_id, 'failed')
+            except Exception as status_error:
+                log(f"failed to mark batch {batch_id} failed: {status_error}")
+            finally:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
 
 if __name__ == "__main__":

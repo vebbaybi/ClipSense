@@ -1,0 +1,65 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node / Next.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.next/
+out/
+dist/
+coverage/
+
+# Go
+bin/
+*.exe
+*.test
+*.out
+coverage.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+env/
+ENV/
+
+# Runtime data, uploads, and local databases
+data/
+backups/
+releases/
+*.db
+*.sqlite
+*.sqlite3
+*.zip
+
+# AI/model caches
+.cache/
+models/
+*.pt
+*.pth
+*.onnx
+*.safetensors
+
+# Logs and temporary files
+*.log
+tmp/
+temp/

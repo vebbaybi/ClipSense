@@ -53,11 +53,19 @@ ClipSense adopts a **multi-service distributed architecture** optimized for modu
 
 # **4. Data Flow Summary**
 
+ClipSense uses a unified intake model. Public or user-provided video links, direct uploaded video files, and ZIP archives should all normalize into the same internal pipeline:
+
+`source input -> stored source asset -> extracted video asset(s) -> metadata -> transcript -> analysis -> highlights/risk/context/storyline`
+
+ZIP archives are one supported intake type, not the product's only input model.
+
+Current MVP status: the implemented intake path is ZIP upload only. Link ingestion and direct single-video upload are future work. Current storyline generation is basic clustering/order logic, not advanced narrative intelligence.
+
 ### **4.1 Step-by-step Pipeline**
 
-1. User uploads a ZIP
-2. API stores metadata and enqueues a job
-3. Worker unpacks the ZIP
+1. User submits a source input: video link, direct video upload, or ZIP archive
+2. API stores source metadata and enqueues a processing job
+3. Intake normalization resolves the source into one or more video assets
 4. Video/audio processed (Python/Rust)
 5. ASR generates transcript
 6. NLP generates:
@@ -396,4 +404,3 @@ It is not a transcription service.
 a system that understands content, context, and storytelling.**
 
 ---
-
