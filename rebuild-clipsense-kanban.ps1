@@ -18,6 +18,11 @@
 # - Keeps project placement separate from requirement content.
 # ============================================================
 
+param(
+    [switch]$DryRun,
+    [switch]$SelfTest
+)
+
 $ErrorActionPreference = "Stop"
 
 $ProjectTitle = "ClipSense"
@@ -25,6 +30,63 @@ $WorkflowFieldNames = @("Workflow Status", "Status")
 $PreferredBacklogStatus = "Product Backlog"
 $PreferredNeedsRefinementStatus = "Needs Refinement"
 
+function Select-WorkflowField {
+    param(
+        [object[]]$Fields,
+        [string[]]$Names
+    )
+
+    foreach ($Name in $Names) {
+        $Field = @($Fields) |
+            Where-Object { $_.name -eq $Name } |
+            Select-Object -First 1
+
+        if ($Field) {
+            return $Field
+        }
+    }
+
+    throw "Project workflow field not found. Expected one of: $($Names -join ', ')"
+}
+
+function Select-WorkflowOptionId {
+    param(
+        [object]$WorkflowField,
+        [string[]]$Names,
+        [bool]$Required = $true
+    )
+
+    foreach ($Name in $Names) {
+        $Option = @($WorkflowField.options) |
+            Where-Object { $_.name -eq $Name } |
+            Select-Object -First 1
+
+        if ($Option) {
+            return $Option.id
+        }
+    }
+
+    if ($Required) {
+        throw "Missing workflow option. Tried: $($Names -join ', ')"
+    }
+
+    return $null
+}
+
+function Test-BodyContains {
+    param(
+        [string]$Body,
+        [string]$Needle
+    )
+
+    if ($null -eq $Body) {
+        return $false
+    }
+
+    return ($Body.IndexOf($Needle, [System.StringComparison]::OrdinalIgnoreCase) -ge 0)
+}
+
+if (-not $SelfTest) {
 gh auth status | Out-Null
 
 $Repo = gh repo view --json nameWithOwner -q ".nameWithOwner"
@@ -51,21 +113,7 @@ Write-Host "Found project: $ProjectTitle #$ProjectNumber" -ForegroundColor Green
 
 $Fields = gh project field-list $ProjectNumber --owner $ProjectOwner --format json | ConvertFrom-Json
 
-$WorkflowField = $null
-foreach ($WorkflowFieldName in $WorkflowFieldNames) {
-    $WorkflowField = @($Fields.fields) |
-        Where-Object { $_.name -eq $WorkflowFieldName } |
-        Select-Object -First 1
-
-    if ($WorkflowField) {
-        break
-    }
-}
-
-if (-not $WorkflowField) {
-    throw "Project workflow field not found. Expected one of: $($WorkflowFieldNames -join ', ')"
-}
-
+$WorkflowField = Select-WorkflowField -Fields $Fields.fields -Names $WorkflowFieldNames
 $WorkflowFieldId = $WorkflowField.id
 
 function Get-WorkflowOptionId {
@@ -74,21 +122,7 @@ function Get-WorkflowOptionId {
         [bool]$Required = $true
     )
 
-    foreach ($Name in $Names) {
-        $Option = @($WorkflowField.options) |
-            Where-Object { $_.name -eq $Name } |
-            Select-Object -First 1
-
-        if ($Option) {
-            return $Option.id
-        }
-    }
-
-    if ($Required) {
-        throw "Missing workflow option. Tried: $($Names -join ', ')"
-    }
-
-    return $null
+    return Select-WorkflowOptionId -WorkflowField $WorkflowField -Names $Names -Required $Required
 }
 
 $WorkflowOptions = @{
@@ -139,7 +173,6 @@ else {
 $LabelsToEnsure = @(
     @{ Name = "type:user-story"; Color = "5319e7"; Description = "User or stakeholder outcome" },
     @{ Name = "type:technical-enabler"; Color = "0e8a16"; Description = "Engineering work that enables product delivery" },
-    @{ Name = "type:feature"; Color = "1d76db"; Description = "Product capability or user-facing feature work" },
     @{ Name = "type:bug"; Color = "d73a4a"; Description = "Broken, failing, miswired, or defective behavior" },
     @{ Name = "type:qa"; Color = "0e8a16"; Description = "Testing, verification, smoke tests, and regression checks" },
     @{ Name = "type:security"; Color = "b60205"; Description = "Security, dependency risk, validation, or vulnerability work" },
@@ -166,14 +199,20 @@ foreach ($Label in $LabelsToEnsure) {
         Select-Object -First 1
 
     if (-not $Found) {
-        gh label create $Label.Name `
-            --repo $Repo `
-            --color $Label.Color `
-            --description $Label.Description | Out-Null
+        if ($DryRun) {
+            Write-Host "DRY-RUN: would create label '$($Label.Name)'." -ForegroundColor Yellow
+        }
+        else {
+            gh label create $Label.Name `
+                --repo $Repo `
+                --color $Label.Color `
+                --description $Label.Description | Out-Null
+        }
     }
 }
 
 Write-Host "Labels verified." -ForegroundColor Green
+}
 
 function Get-CardType {
     param([string[]]$Labels)
@@ -185,8 +224,7 @@ function Get-CardType {
         "type:security",
         "type:qa",
         "type:doc",
-        "type:chore",
-        "type:feature"
+        "type:chore"
     )
 
     foreach ($TypeLabel in $TypeLabels) {
@@ -215,32 +253,38 @@ function Test-StructuredIssueBody {
     )
 
     foreach ($Marker in $BoilerplateMarkers) {
-        if ($Body.Contains($Marker)) {
+        if (Test-BodyContains -Body $Body -Needle $Marker) {
             return $false
         }
     }
 
+    $ExplicitTypeLabels = @($Labels | Where-Object { $_ -like "type:*" })
+
+    if ($ExplicitTypeLabels.Count -ne 1) {
+        return $false
+    }
+
     $CardType = Get-CardType -Labels $Labels
+    if (-not $CardType) {
+        return $false
+    }
+
     $RequiredSectionsByType = @{
         "type:user-story"        = @("## User Story", "Acceptance Criteria")
         "type:bug"               = @("Acceptance Criteria")
         "type:technical-enabler" = @("Technical Enabler", "Acceptance Criteria")
         "type:security"          = @("Security", "Acceptance Criteria")
-        "type:qa"                = @("QA", "Validation")
+        "type:qa"                = @("QA")
         "type:doc"               = @("Documentation", "Acceptance Criteria")
         "type:chore"             = @("Maintenance", "Acceptance Criteria")
-        "type:feature"           = @("Product", "Acceptance Criteria")
     }
     $RequiredAnySectionByType = @{
         "type:bug" = @("Bug Report", "Problem Summary")
-    }
-
-    if (-not $CardType -or -not $RequiredSectionsByType.ContainsKey($CardType)) {
-        return ($Body.Length -ge 120 -and ($Body.Contains("Acceptance Criteria") -or $Body.Contains("Validation")))
+        "type:qa"  = @("Validation", "Acceptance Criteria", "Scenarios", "Pass Conditions")
     }
 
     foreach ($RequiredSection in $RequiredSectionsByType[$CardType]) {
-        if (-not $Body.Contains($RequiredSection)) {
+        if (-not (Test-BodyContains -Body $Body -Needle $RequiredSection)) {
             return $false
         }
     }
@@ -249,7 +293,7 @@ function Test-StructuredIssueBody {
         $FoundAnyRequiredSection = $false
 
         foreach ($RequiredSection in $RequiredAnySectionByType[$CardType]) {
-            if ($Body.Contains($RequiredSection)) {
+            if (Test-BodyContains -Body $Body -Needle $RequiredSection) {
                 $FoundAnyRequiredSection = $true
                 break
             }
@@ -263,6 +307,22 @@ function Test-StructuredIssueBody {
     return $true
 }
 
+function Select-OpenIssueByExactTitle {
+    param(
+        [object[]]$OpenIssues,
+        [string]$Title
+    )
+
+    $Matches = @($OpenIssues) |
+        Where-Object { $_.title -eq $Title }
+
+    if ($Matches.Count -gt 1) {
+        throw "Multiple open issues have the exact title '$Title'. Resolve the duplicate before placement."
+    }
+
+    return $Matches | Select-Object -First 1
+}
+
 function Get-OpenIssueByExactTitle {
     param([string]$Title)
 
@@ -270,11 +330,9 @@ function Get-OpenIssueByExactTitle {
         --repo $Repo `
         --state open `
         --limit 1000 `
-        --json number,title,url,body | ConvertFrom-Json
+        --json number,title,url,body,labels | ConvertFrom-Json
 
-    return @($OpenIssues) |
-        Where-Object { $_.title -eq $Title } |
-        Select-Object -First 1
+    return Select-OpenIssueByExactTitle -OpenIssues $OpenIssues -Title $Title
 }
 
 function Sync-IssueLabels {
@@ -284,9 +342,34 @@ function Sync-IssueLabels {
     )
 
     if ($Labels.Count -gt 0) {
-        gh issue edit $IssueNumber `
-            --repo $Repo `
-            --add-label ($Labels -join ",") | Out-Null
+        $DesiredTypeLabels = @($Labels | Where-Object { $_ -like "type:*" })
+
+        if ($DesiredTypeLabels.Count -eq 1) {
+            if ($DryRun) {
+                Write-Host "DRY-RUN: would remove conflicting type labels from issue #${IssueNumber}." -ForegroundColor Yellow
+            }
+            else {
+                $IssueLabels = gh issue view $IssueNumber --repo $Repo --json labels | ConvertFrom-Json
+                $ConflictingTypeLabels = @($IssueLabels.labels |
+                    Where-Object { $_.name -like "type:*" -and $_.name -ne $DesiredTypeLabels[0] } |
+                    ForEach-Object { $_.name })
+
+                if ($ConflictingTypeLabels.Count -gt 0) {
+                    gh issue edit $IssueNumber `
+                        --repo $Repo `
+                        --remove-label ($ConflictingTypeLabels -join ",") | Out-Null
+                }
+            }
+        }
+
+        if ($DryRun) {
+            Write-Host "DRY-RUN: would add labels to issue #${IssueNumber}: $($Labels -join ', ')" -ForegroundColor Yellow
+        }
+        else {
+            gh issue edit $IssueNumber `
+                --repo $Repo `
+                --add-label ($Labels -join ",") | Out-Null
+        }
     }
 }
 
@@ -307,6 +390,16 @@ function Get-OrCreate-OpenIssue {
     if (-not (Test-StructuredIssueBody -Body $Body -Labels $Labels)) {
         Write-Warning "Skipped missing issue '$Title': no issue-specific structured body was provided for its work-item type."
         return $null
+    }
+
+    if ($DryRun) {
+        Write-Host "DRY-RUN: would create issue '$Title'." -ForegroundColor Yellow
+        return [pscustomobject]@{
+            number = 0
+            title  = $Title
+            url    = "dry-run://issue/$Title"
+            body   = $Body
+        }
     }
 
     $Args = @(
@@ -333,6 +426,11 @@ function Add-ToProject {
     )
 
     if ([string]::IsNullOrWhiteSpace($IssueUrl)) {
+        return
+    }
+
+    if ($DryRun) {
+        Write-Host "DRY-RUN: would place '$IssueUrl' -> $WorkflowStatus / $Priority." -ForegroundColor Yellow
         return
     }
 
@@ -392,6 +490,135 @@ function Add-Card {
     Write-Host "Placed: $Title -> $EffectiveStatus / $Priority" -ForegroundColor Green
 }
 
+function Invoke-SelfTest {
+    $Failures = New-Object System.Collections.Generic.List[string]
+
+    function Assert-Test {
+        param(
+            [string]$Name,
+            [bool]$Condition
+        )
+
+        if ($Condition) {
+            Write-Host "PASS: $Name" -ForegroundColor Green
+        }
+        else {
+            Write-Host "FAIL: $Name" -ForegroundColor Red
+            $Failures.Add($Name) | Out-Null
+        }
+    }
+
+    $ValidBugBody = @"
+## Problem Summary
+
+The worker image omits a required runtime module.
+
+## Acceptance Criteria
+
+- The image builds.
+- The import resolves.
+"@
+
+    $ValidStoryBody = @"
+## User Story
+
+As a creator, I want to upload a ZIP so that a batch can be processed.
+
+## Acceptance Criteria
+
+- Valid ZIP uploads create a batch.
+- Invalid uploads fail safely.
+"@
+
+    $ValidEnablerBody = @"
+## Technical Enabler
+
+## Engineering Objective
+
+Provide a reliable queue handoff between API and worker.
+
+## Acceptance Criteria
+
+- API enqueues a job.
+- Worker consumes the job.
+"@
+
+    $WrongTypeBody = @"
+## User Story
+
+As a creator, I want a capability.
+
+## Acceptance Criteria
+
+- The capability works.
+"@
+
+    Assert-Test "missing issue body rejected" (-not (Test-StructuredIssueBody -Body $null -Labels @("type:bug")))
+    Assert-Test "empty issue body rejected" (-not (Test-StructuredIssueBody -Body "" -Labels @("type:bug")))
+    Assert-Test "old Kanban Placement boilerplate rejected" (-not (Test-StructuredIssueBody -Body "## Kanban Placement`nStatus: Ready" -Labels @("type:bug")))
+    Assert-Test "old Agile Rule boilerplate rejected" (-not (Test-StructuredIssueBody -Body "## Agile Rule`nRepository evidence can inform this card" -Labels @("type:bug")))
+    Assert-Test "meaningful existing bug body accepted" (Test-StructuredIssueBody -Body $ValidBugBody -Labels @("type:bug"))
+    Assert-Test "issue-specific valid bug body accepted" (Test-StructuredIssueBody -Body $ValidBugBody -Labels @("type:bug"))
+    Assert-Test "issue-specific valid user-story body accepted" (Test-StructuredIssueBody -Body $ValidStoryBody -Labels @("type:user-story"))
+    Assert-Test "issue-specific valid technical-enabler body accepted" (Test-StructuredIssueBody -Body $ValidEnablerBody -Labels @("type:technical-enabler"))
+    Assert-Test "wrong body structure for declared type rejected" (-not (Test-StructuredIssueBody -Body $WrongTypeBody -Labels @("type:technical-enabler")))
+    Assert-Test "unsupported feature type rejected" (-not (Test-StructuredIssueBody -Body $ValidEnablerBody -Labels @("type:feature")))
+    Assert-Test "multiple type labels rejected" (-not (Test-StructuredIssueBody -Body $ValidEnablerBody -Labels @("type:technical-enabler", "type:bug")))
+
+    $ExactIssues = @(
+        [pscustomobject]@{ number = 1; title = "CS-001: Exact"; body = $ValidBugBody },
+        [pscustomobject]@{ number = 2; title = "CS-001: Exact-ish"; body = $ValidBugBody }
+    )
+    $ExactMatch = Select-OpenIssueByExactTitle -OpenIssues $ExactIssues -Title "CS-001: Exact"
+    Assert-Test "exact-title collision ignores similar title" ($ExactMatch.number -eq 1)
+
+    $DuplicateIssues = @(
+        [pscustomobject]@{ number = 1; title = "Duplicate"; body = $ValidBugBody },
+        [pscustomobject]@{ number = 2; title = "Duplicate"; body = $ValidBugBody }
+    )
+    $DuplicateRejected = $false
+    try {
+        Select-OpenIssueByExactTitle -OpenIssues $DuplicateIssues -Title "Duplicate" | Out-Null
+    }
+    catch {
+        $DuplicateRejected = $true
+    }
+    Assert-Test "multiple exact-title issues rejected" $DuplicateRejected
+
+    $Field = [pscustomobject]@{ name = "Workflow Status"; options = @([pscustomobject]@{ name = "Ready"; id = "ready-id" }) }
+    Assert-Test "workflow field found by preferred name" ((Select-WorkflowField -Fields @($Field) -Names @("Workflow Status", "Status")).name -eq "Workflow Status")
+    Assert-Test "workflow status option found" ((Select-WorkflowOptionId -WorkflowField $Field -Names @("Ready")) -eq "ready-id")
+
+    $MissingFieldRejected = $false
+    try {
+        Select-WorkflowField -Fields @() -Names @("Workflow Status") | Out-Null
+    }
+    catch {
+        $MissingFieldRejected = $true
+    }
+    Assert-Test "missing project field fails safely" $MissingFieldRejected
+
+    $MissingStatusRejected = $false
+    try {
+        Select-WorkflowOptionId -WorkflowField $Field -Names @("Missing") | Out-Null
+    }
+    catch {
+        $MissingStatusRejected = $true
+    }
+    Assert-Test "missing workflow status fails safely" $MissingStatusRejected
+
+    if ($Failures.Count -gt 0) {
+        throw "Self-test failed: $($Failures -join ', ')"
+    }
+
+    Write-Host "Self-test complete: all checks passed." -ForegroundColor Green
+}
+
+if ($SelfTest) {
+    Invoke-SelfTest
+    return
+}
+
 $Cards = @(
     @{ Title = "US-000: Transform Raw Creator Footage Into Story-Ready Output"; WorkflowStatus = "Product Backlog"; Priority = "P0"; Labels = @("type:user-story","priority:p0","scope:mvp") }
     @{ Title = "US-001: ZIP Batch Upload"; WorkflowStatus = "Product Backlog"; Priority = "P0"; Labels = @("type:user-story","priority:p0","scope:mvp") }
@@ -421,11 +648,11 @@ $Cards = @(
     @{ Title = "CS-205: Basic MVP Clip Classification and Taxonomy Foundation"; WorkflowStatus = "Product Backlog"; Priority = "P1"; Labels = @("type:technical-enabler","priority:p1","scope:mvp") }
     @{ Title = "CS-204: Store clip embeddings in Qdrant for semantic workflows"; WorkflowStatus = "Product Backlog"; Priority = "P1"; Labels = @("type:technical-enabler","priority:p1","scope:mvp") }
     @{ Title = "CS-207: Persist and Display Batch Failure Reasons"; WorkflowStatus = "Product Backlog"; Priority = "P1"; Labels = @("type:technical-enabler","priority:p1","scope:mvp") }
-    @{ Title = "CS-301: MVP Creator Dashboard and Batch Review Views"; WorkflowStatus = "Product Backlog"; Priority = "P0"; Labels = @("type:feature","priority:p0","scope:mvp") }
+    @{ Title = "CS-301: MVP Creator Dashboard and Batch Review Views"; WorkflowStatus = "Product Backlog"; Priority = "P0"; Labels = @("type:technical-enabler","priority:p0","scope:mvp") }
     @{ Title = "CS-305: Fix Dashboard Route Structure"; WorkflowStatus = "Product Backlog"; Priority = "P0"; Labels = @("type:bug","priority:p0","scope:mvp") }
     @{ Title = "CS-306: Stabilize Frontend Auth Hydration"; WorkflowStatus = "Product Backlog"; Priority = "P0"; Labels = @("type:bug","priority:p0","scope:mvp") }
     @{ Title = "CS-304: Show reliable frontend errors for API and processing failures"; WorkflowStatus = "Product Backlog"; Priority = "P1"; Labels = @("type:technical-enabler","priority:p1","scope:mvp") }
-    @{ Title = "CS-405: MVP Batch Export and Future Narrative Package Export"; WorkflowStatus = "Product Backlog"; Priority = "P2"; Labels = @("type:feature","priority:p2","scope:mvp") }
+    @{ Title = "CS-405: MVP Batch Export and Future Narrative Package Export"; WorkflowStatus = "Product Backlog"; Priority = "P2"; Labels = @("type:technical-enabler","priority:p2","scope:mvp") }
     @{ Title = "CS-113: Frontend Dependency Vulnerability Cleanup"; WorkflowStatus = "Needs Refinement"; Priority = "P1"; Labels = @("type:security","priority:p1","scope:stabilization","needs-refinement") }
     @{ Title = "CS-115: CI Build/Test Validation"; WorkflowStatus = "Product Backlog"; Priority = "P1"; Labels = @("type:qa","priority:p1","scope:stabilization") }
     @{ Title = "CS-208: End-to-End ZIP MVP Verification Gate"; WorkflowStatus = "Product Backlog"; Priority = "P0"; Labels = @("type:qa","priority:p0","scope:mvp") }
@@ -445,13 +672,13 @@ $Cards = @(
     @{ Title = "US-016: Scaled Cloud Uploads"; WorkflowStatus = "Icebox"; Priority = "P3"; Labels = @("type:user-story","priority:p3","scope:post-mvp") }
     @{ Title = "US-017: Faster Video Processing Engine"; WorkflowStatus = "Icebox"; Priority = "P3"; Labels = @("type:user-story","priority:p3","scope:post-mvp") }
     @{ Title = "US-018: Editor-Ready Export Package"; WorkflowStatus = "Icebox"; Priority = "P3"; Labels = @("type:user-story","priority:p3","scope:post-mvp") }
-    @{ Title = "CS-302: Native Video Segment Player"; WorkflowStatus = "Icebox"; Priority = "P3"; Labels = @("type:feature","priority:p3","scope:post-mvp") }
+    @{ Title = "CS-302: Native Video Segment Player"; WorkflowStatus = "Icebox"; Priority = "P3"; Labels = @("type:technical-enabler","priority:p3","scope:post-mvp") }
     @{ Title = "CS-303: Timeline Workspace State Store"; WorkflowStatus = "Icebox"; Priority = "P3"; Labels = @("type:technical-enabler","priority:p3","scope:post-mvp") }
     @{ Title = "CS-401: Remote Video Link Ingestion Worker"; WorkflowStatus = "Icebox"; Priority = "P3"; Labels = @("type:technical-enabler","priority:p3","scope:roadmap") }
     @{ Title = "CS-402: Cloud Multipart Upload Pipeline"; WorkflowStatus = "Icebox"; Priority = "P3"; Labels = @("type:technical-enabler","priority:p3","scope:post-mvp") }
     @{ Title = "CS-403: Graph-Based Narrative Connector"; WorkflowStatus = "Icebox"; Priority = "P3"; Labels = @("type:technical-enabler","priority:p3","scope:post-mvp") }
     @{ Title = "CS-404: Rust Video Core for Scene Boundary Detection"; WorkflowStatus = "Icebox"; Priority = "P3"; Labels = @("type:technical-enabler","priority:p3","scope:post-mvp") }
-    @{ Title = "Advanced scope of CS-405: Editor-Ready Export Package"; WorkflowStatus = "Icebox"; Priority = "P3"; Labels = @("type:feature","priority:p3","scope:post-mvp") }
+    @{ Title = "Advanced scope of CS-405: Editor-Ready Export Package"; WorkflowStatus = "Icebox"; Priority = "P3"; Labels = @("type:technical-enabler","priority:p3","scope:post-mvp") }
 )
 
 Write-Host ""
