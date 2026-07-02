@@ -2,7 +2,7 @@
 
 ## 1. Document Purpose
 
-This is the authoritative ClipSense backlog for the complete product journey from product foundation through first functional increment, MVP, stabilization, production release, progressive post-MVP releases, mature product operation, maintenance, deprecation, and responsible retirement.
+This is the authoritative ClipSense backlog for the complete product journey from product foundation through functional prototype, functional MVP, production-ready MVP, stabilization, public production release, progressive post-MVP releases, mature product operation, maintenance, deprecation, and responsible retirement.
 
 This document does not begin from the current repository state. The repository is evidence. Existing code, docs, scripts, and tests are mapped to the backlog item where that capability belongs in the professional development lifecycle, then assessed as verified, partial, hardening required, defective, missing validation, not implemented, or legacy.
 
@@ -120,32 +120,48 @@ Current debt clusters around security defaults, auth/session hardening, reliable
 
 | Stage | Consumer and Engineering Journey | Backlog Coverage |
 | --- | --- | --- |
-| Foundation | Define consumers, product boundaries, terminology, repo environment, security/privacy/accessibility baselines, CI, and documentation truth. | Ranks 001-007 |
-| First Functional Increment | Give a creator account access, explain supported ZIP input, create a batch, validate initial upload, enqueue work, and show first result. | Ranks 008-020 |
-| MVP | Complete the safe minimum journey: upload supported footage, track status, review clips/storyline, export, understand failures, and know data lifecycle. | Ranks 021-029 |
-| MVP Hardening | Correct unsafe defaults, session risks, export defect, state accuracy, queue reliability, idempotency, accessibility, E2E validation, dependencies, and containers. | Ranks 030-039 |
-| Production Release | Add production config, secrets, privacy/deletion, contracts, runtime validation, AI quality gates, migrations, backups, observability, and release runbooks. | Ranks 040-049 |
-| Post-MVP Releases | Add direct video uploads, media compatibility, resumable uploads, link intake, transcript correction, configurable classification, reordering, search, editor exports, reprocessing, workspaces, and collaboration progressively. | Ranks 050-062 |
-| Mature Product | Manage accessibility regression, model upgrades, compatibility, long-term maintainability, deprecation, and retirement. | Ranks 063-064 plus ongoing release gates |
-| Maintenance and Evolution | Keep dependencies, schemas, models, exports, docs, and obsolete features current or retired safely. | Ranks 049, 063, 064 |
+| Foundation | Define consumers, product boundaries, terminology, repository environment, security/privacy/accessibility baselines, CI, and documentation truth. | Ranks 001-007 |
+| Functional Prototype | Demonstrate the first vertical ZIP-to-result loop: account access, guidance, upload, storage, batch state, safe extraction, queue handoff, first analysis result, and accessible upload/status basics. This proves the concept but is not safe for public release. | Ranks 008-020 |
+| Functional MVP | Complete the minimum creator journey: user-owned results, reviewable clips, vector-backed basic storyline, authenticated export, lifecycle baseline, failure messaging, and health visibility. This is usable for controlled internal validation but not publicly releasable. | Ranks 021-029 |
+| Production-Ready MVP | Add the controls required for controlled real-user use: unsafe-default removal, session hardening, truthful partial states, reliable queueing, idempotency, accessibility validation, E2E tests, dependency remediation, hardened containers, production config, privacy/deletion, contracts, runtime validation, AI quality, migrations, backups, observability, quotas, cost controls, abuse prevention, and media-rights communication. | Ranks 030-049 |
+| MVP Stabilization | Use controlled-release evidence to repair defects, tune limits, resolve support findings, and validate release gates before public launch. | Rank 050 |
+| Public Production Release | Publish the production-ready MVP with release versioning, support runbooks, incident communication, service-status communication, rollback criteria, and consumer-facing limitation notes. | Rank 051 |
+| Post-MVP Release 1 | Expand intake progressively: media compatibility, direct uploads, resumable uploads, and user-provided links. | Ranks 052-055 |
+| Post-MVP Release 2 | Improve creator workflow and intelligence: transcript-linked playback/correction, configurable classification, editable storylines, accessibility regression, search, professional exports, and reprocessing. | Ranks 056-062 |
+| Post-MVP Release 3 | Add account/workspace and collaboration controls only after single-user authorization and deletion are mature. | Ranks 063-064 |
+| Mature Product | Manage model upgrades, compatibility, long-term maintainability, deprecation, migration, and responsible retirement. | Ranks 065-066 |
 
 ## 6. MVP Definition
 
-The smallest complete, safe, useful, and releasable ClipSense MVP is:
+### Functional Prototype
 
-1. A creator can register, log in, and recover from missing or expired access in a clear way.
-2. The app explains exactly what ZIP inputs are accepted, including size, count, format, and unsupported cases.
-3. The creator submits a supported ZIP archive and receives immediate validation.
-4. The API creates a user-owned batch with trustworthy state.
-5. The system safely stores the source archive and enqueues processing.
-6. The worker safely extracts supported videos, avoids ZIP traversal/resource exhaustion, transcribes audio, creates basic analysis, creates a basic storyline, and persists results.
-7. The creator can see batch progress, final success, failure, or partial success without misleading completion.
-8. The creator can review clips, summaries, transcript text, simple classifications, and storyline order.
-9. The creator can export a supported result through an authenticated flow.
-10. The creator can understand failure reasons and retry or delete data where applicable.
-11. The product communicates retention, deletion, and privacy behavior for uploaded and generated data.
+The functional prototype proves the ClipSense concept with a demonstrable ZIP intake path, account access, batch creation, safe extraction basics, worker processing, first analysis output, and visible status. It may be suitable for local development and internal demos only. It is not releasable to public or uncontrolled real users.
 
-MVP does not include direct video upload, link intake, resumable uploads, collaboration, billing, editor plug-ins, advanced narrative intelligence, or production-scale infrastructure unless they become necessary to make the MVP safe and releasable.
+### Functional MVP
+
+The functional MVP is the smallest complete creator journey with meaningful product value:
+
+1. A creator can register, log in, and access a protected dashboard.
+2. The app explains exactly what ZIP inputs are accepted.
+3. The creator submits supported footage and receives immediate validation.
+4. The system creates a user-owned batch, stores the source, safely extracts media, enqueues processing, and produces reviewable results.
+5. The creator can see truthful status, review clips and generated metadata, inspect a basic storyline, export through an authenticated flow, and understand data lifecycle basics.
+
+The functional MVP is not public-release-ready until production-ready controls below are completed.
+
+### Production-Ready MVP
+
+The production-ready MVP is the functional MVP plus all release-blocking controls for controlled real-user use: secure defaults, hardened browser session behavior, authenticated export, truthful failure and partial-success state, reliable queue acknowledgement/retry/dead-letter handling, idempotent processing, retention and deletion controls, accessibility validation, dependency remediation, container hardening, production configuration, API contracts, runtime validation, AI quality evaluation, migrations, backup/recovery, observability, usage and storage limits, processing cost controls, abuse prevention, media-rights communication, and end-to-end release evidence.
+
+### MVP Stabilization
+
+MVP stabilization happens after production-ready MVP validation or controlled release. It is not a license to postpone known release blockers. It is the stage for issues discovered through real runtime evidence, creator support, incident review, telemetry, and release-gate findings.
+
+### Public Production Release
+
+Public production release is the production-ready MVP plus release versioning, support runbooks, rollback criteria, incident communication, service-status communication, privacy and acceptable-use communication, and operational ownership.
+
+Direct video upload, link intake, resumable uploads, collaboration, billing, editor plug-ins, advanced narrative intelligence, and production-scale infrastructure remain post-MVP unless they become necessary to satisfy the production-ready MVP boundaries above.
 
 ## 7. Full Product Definition
 
@@ -303,7 +319,7 @@ Product Vision and Consumer Boundaries.
 ### Validation Evidence
 
 - [ ] Threat model covers upload, auth, queue, worker, database, vector store, export, and logs.
-- [ ] Security checklist is enforced before MVP hardening and production release.
+- [ ] Security checklist is enforced before production-ready MVP work and public production release.
 
 ### Out of Scope
 
@@ -531,22 +547,22 @@ Full production deployment automation.
 - [ ] CI and docs support first functional increment development.
 - [ ] Known CI gaps are captured in later ranked items.
 
-## Creator Account Access
+## Creator Account Access and Recovery
 
 **Business Rank:** 008  
-**Release Stage:** First Functional Increment  
+**Release Stage:** Functional Prototype  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Requires Hardening
 
 ### User Story
 
 **As a** creator  
-**I need** to create an account and sign in  
-**So that** my batches and generated results are separated from other users.
+**I need** to create, verify, recover, and sign in to an account  
+**So that** my batches and generated results are separated from other users without locking me out permanently.
 
 ### Product Outcome
 
-A creator can register, log in, receive an authenticated session, and access the dashboard.
+A creator can register, verify account ownership where required, log in, recover access safely, receive an authenticated session, and access the dashboard.
 
 ### Business Value
 
@@ -554,31 +570,31 @@ Account access is the first privacy boundary and enables every user-owned media 
 
 ### Repository Evidence
 
-`apps/api/main.go` implements `/api/auth/register` and `/api/auth/login` with bcrypt and JWTs. `apps/web/src/app/page.tsx` provides login/register UI. There is no password policy, duplicate email handling UX, visible logout, session expiration messaging, or rate protection.
+`apps/api/main.go` implements `/api/auth/register` and `/api/auth/login` with bcrypt and JWTs. `apps/web/src/app/page.tsx` provides login/register UI. There is no password policy, email verification, account recovery, duplicate email handling UX, visible logout, session expiration messaging, or rate protection.
 
 ### Functional Requirements and Business Rules
 
-Require valid email format, minimum password rules, duplicate account handling, login failure normalization, token expiry handling, and a visible session control.
+Require valid email format, minimum password rules, duplicate account handling, optional email verification for public release, safe password reset, login failure normalization, token expiry handling, and a visible session control.
 
 ### Consumer Safety and Trust
 
-Do not reveal whether an email exists during login failure. Explain session expiration without exposing token details.
+Do not reveal whether an email exists during login or recovery. Explain session expiration and recovery outcomes without exposing token details.
 
 ### Data and State Requirements
 
-User records must have unique emails, password hashes only, created timestamps, and future support for account deletion.
+User records must have unique emails, password hashes only, created timestamps, verification/recovery state where enabled, and future support for account deletion and downloadable personal data.
 
 ### Failure and Fallback Behaviour
 
-Invalid credentials return a safe error. Duplicate registration returns a user-actionable message. API unavailability is shown as a service issue.
+Invalid credentials and recovery requests return safe, consistent messages. Duplicate registration returns a user-actionable message. API or email delivery unavailability is shown as a service issue.
 
 ### Edge Cases
 
-Invalid JSON, empty email, weak password, duplicate email, expired token, network failure, and browser refresh after login.
+Invalid JSON, empty email, weak password, duplicate email, unverified email where verification is required, expired token, expired recovery token, network failure, and browser refresh after login.
 
 ### Security and Privacy Requirements
 
-Use bcrypt or approved password hashing, safe error messages, token expiration, no password logging, and rate protection in hardening.
+Use bcrypt or approved password hashing, safe error messages, token expiration, single-use recovery tokens, no password or recovery-token logging, and rate protection in hardening.
 
 ### Accessibility Requirements
 
@@ -586,15 +602,15 @@ Inputs require labels, error association, keyboard submission, visible focus, an
 
 ### Performance and Reliability Requirements
 
-Auth responses should be quick enough for interactive use and resilient to dependency errors.
+Auth and recovery responses should be quick enough for interactive use, resilient to dependency errors, and consistent enough to avoid account enumeration.
 
 ### Observability and Operational Requirements
 
-Log auth failures as counters without recording passwords or full tokens.
+Log auth and recovery failures as counters without recording passwords, reset tokens, verification tokens, or full JWTs.
 
 ### Assumptions
 
-Email/password is sufficient for MVP; SSO is post-MVP unless product need changes.
+Email/password is sufficient for MVP; SSO is post-MVP unless product need changes. Email verification and recovery are required before broad public account creation, not necessarily for a local prototype.
 
 ### Dependencies
 
@@ -604,14 +620,16 @@ Security and Privacy Baseline; Accessibility Baseline.
 
 - [ ] **Given** a creator submits a valid new email and password, **when** registration succeeds, **then** a token is issued and the dashboard loads.
 - [ ] **Given** a creator submits invalid credentials, **when** login fails, **then** the response is safe and does not reveal whether the email exists.
+- [ ] **Given** a creator starts account recovery, **when** the email exists or does not exist, **then** the user-facing response remains consistent and any valid recovery token is single-use and time-limited.
+- [ ] **Given** public registration requires verification, **when** an unverified creator tries protected actions, **then** the product clearly explains the verification requirement without exposing internal token state.
 - [ ] **Given** a token expires, **when** the creator opens a protected page, **then** they are redirected to sign in with an understandable message.
 - [ ] **Given** a keyboard-only creator uses the form, **when** they tab and submit, **then** every control and error is accessible.
 
 ### Validation Evidence
 
-- [ ] Unit tests cover registration validation, login success, duplicate email, invalid credentials, and expired token.
-- [ ] UI or E2E tests cover sign-in, registration, error display, and logout.
-- [ ] Security test confirms passwords and tokens are not logged.
+- [ ] Unit tests cover registration validation, optional verification, login success, duplicate email, invalid credentials, recovery request, single-use recovery token, and expired token.
+- [ ] UI or E2E tests cover sign-in, registration, verification or recovery messaging, error display, and logout.
+- [ ] Security test confirms passwords, JWTs, verification tokens, and recovery tokens are not logged.
 
 ### Out of Scope
 
@@ -631,7 +649,7 @@ OAuth, SSO, multi-factor authentication, and teams.
 ## Authenticated API Boundary
 
 **Business Rank:** 009  
-**Release Stage:** First Functional Increment  
+**Release Stage:** Functional Prototype  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Requires Hardening
 
@@ -657,7 +675,7 @@ Return `401` for unauthenticated requests and `404` or safe `403` for unauthoriz
 
 ### Dependencies
 
-Creator Account Access.
+Creator Account Access and Recovery.
 
 ### Acceptance Criteria
 
@@ -687,7 +705,7 @@ Workspace roles and shared access.
 ## Supported ZIP Batch Guidance
 
 **Business Rank:** 010  
-**Release Stage:** First Functional Increment  
+**Release Stage:** Functional Prototype  
 **Fibonacci Estimate:** 3  
 **Current Implementation Assessment:** Partially Implemented; Missing Validation
 
@@ -781,7 +799,7 @@ Direct video upload and link intake.
 ## Batch Schema and State Model
 
 **Business Rank:** 011  
-**Release Stage:** First Functional Increment  
+**Release Stage:** Functional Prototype  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Requires Hardening
 
@@ -837,7 +855,7 @@ Advanced workflow orchestration and multi-worker scheduling.
 ## Secure ZIP Batch Upload
 
 **Business Rank:** 012  
-**Release Stage:** First Functional Increment  
+**Release Stage:** Functional Prototype  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Partially Implemented; Requires Hardening
 
@@ -935,7 +953,7 @@ Direct uploads, resumable uploads, virus scanning service selection, and cloud o
 ## Local Source Storage Baseline
 
 **Business Rank:** 013  
-**Release Stage:** First Functional Increment  
+**Release Stage:** Functional Prototype  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Requires Hardening
 
@@ -991,7 +1009,7 @@ Cloud object storage and cross-region replication.
 ## Batch Submission and Tracking
 
 **Business Rank:** 014  
-**Release Stage:** First Functional Increment  
+**Release Stage:** Functional Prototype  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Missing Validation
 
@@ -1086,7 +1104,7 @@ Project folders, search, sharing, and collaboration.
 ## Upload Request Size and Type Enforcement
 
 **Business Rank:** 015  
-**Release Stage:** First Functional Increment  
+**Release Stage:** Functional Prototype  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Requires Hardening
 
@@ -1142,7 +1160,7 @@ Resumable upload protocol and external malware scanning.
 ## Processing Status Visibility
 
 **Business Rank:** 016  
-**Release Stage:** First Functional Increment  
+**Release Stage:** Functional Prototype  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Requires Hardening
 
@@ -1166,7 +1184,7 @@ Dashboard and detail pages display `batch.status`. The worker updates `processin
 
 ### Functional Requirements and Business Rules
 
-Expose status labels for queued, processing, complete, failed, partial, cancelled, and retrying when supported. Show last update time and clear next action.
+Expose status labels for queued, processing, complete, failed, partial, cancelled, and retrying when supported. Show last update time and clear next action. Treat email, push, or background-completion notifications as post-MVP unless controlled-release evidence shows creators cannot use the product without them.
 
 ### Consumer Safety and Trust
 
@@ -1198,11 +1216,11 @@ Polling or eventing must avoid excessive requests and stop when terminal state i
 
 ### Observability and Operational Requirements
 
-Emit metrics for state duration, queue wait, processing duration, and failed state counts.
+Emit metrics for state duration, queue wait, processing duration, failed state counts, and later notification-delivery outcomes if external notifications are added.
 
 ### Assumptions
 
-Polling is enough for MVP; WebSockets can remain future work until justified.
+Polling is enough for the functional MVP; WebSockets and external completion notifications remain future enhancements until justified.
 
 ### Dependencies
 
@@ -1238,7 +1256,7 @@ Real-time WebSockets and detailed per-frame progress.
 ## Redis Job Enqueue and Worker Startup
 
 **Business Rank:** 017  
-**Release Stage:** First Functional Increment  
+**Release Stage:** Functional Prototype  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Requires Hardening
 
@@ -1292,105 +1310,10 @@ Dead-letter queue and acknowledged retry semantics, covered later.
 - [ ] Enqueue and worker startup behavior are deterministic.
 - [ ] Invalid jobs and unavailable dependencies are safely handled.
 
-## First Clip Analysis Result
-
-**Business Rank:** 018  
-**Release Stage:** First Functional Increment  
-**Fibonacci Estimate:** 8  
-**Current Implementation Assessment:** Partially Implemented; Missing Validation
-
-### User Story
-
-**As a** creator  
-**I need** ClipSense to produce an understandable first analysis result  
-**So that** I can see value from uploaded footage before advanced storytelling exists.
-
-### Product Outcome
-
-At least one processed clip produces transcript text where possible, a summary, simple mood, simple role, topic, duration, and visible result data.
-
-### Business Value
-
-This proves the core pre-editing loop: source footage becomes structured review material.
-
-### Repository Evidence
-
-Worker `process_batch` extracts audio with FFmpeg, transcribes with Whisper, summarizes by truncation, classifies simple mood and role, calculates duration through `ffmpeg.probe`, and inserts clips. UI displays title, summary, mood, role, and duration but not full transcript.
-
-### Functional Requirements and Business Rules
-
-Process supported videos into clip records with filename, title, transcript, summary, mood, role, topic, duration, and created timestamp. Store empty transcript only with an explicit warning or per-clip failure state.
-
-### Consumer Safety and Trust
-
-Mark AI analysis as generated and potentially imperfect. Do not hide failed transcription behind a neutral-looking summary.
-
-### Data and State Requirements
-
-Clip records must belong to one batch and be ordered predictably. Duration should aggregate into batch duration.
-
-### Failure and Fallback Behaviour
-
-If one clip fails transcription, the batch should record a per-clip failure and continue where safe.
-
-### Edge Cases
-
-No audio track, unsupported codec, very short clips, very long clips, non-English speech, silence, FFmpeg probe failure, and model timeout.
-
-### Security and Privacy Requirements
-
-Transcripts are sensitive generated data and must be protected by the same authorization as source media.
-
-### Accessibility Requirements
-
-Results should be readable with semantic headings and not depend only on color-coded mood/role.
-
-### Performance and Reliability Requirements
-
-Processing time must be bounded by documented MVP expectations and large-file limits.
-
-### Observability and Operational Requirements
-
-Record per-stage durations and failure categories for extract, transcribe, analyze, persist, and vector upsert.
-
-### Assumptions
-
-Local Whisper and heuristic summary/classification are acceptable for the first increment.
-
-### Dependencies
-
-Redis Job Enqueue and Worker Startup; Batch Schema and State Model.
-
-### Acceptance Criteria
-
-- [ ] **Given** a supported ZIP with one valid video, **when** processing completes, **then** a clip record exists with transcript or explicit transcript failure, summary, role, mood, topic, and duration.
-- [ ] **Given** FFmpeg cannot extract audio for one clip, **when** processing continues, **then** the clip failure is visible and does not masquerade as successful analysis.
-- [ ] **Given** a creator opens batch detail, **when** clip results exist, **then** the visible cards expose the meaningful first result.
-
-### Validation Evidence
-
-- [ ] Worker integration test processes a tiny media fixture or mocked FFmpeg/Whisper path.
-- [ ] API test verifies clip result serialization.
-- [ ] UI test verifies result rendering for successful and failed clip analysis.
-
-### Out of Scope
-
-Advanced summaries, speaker diarization, timestamps, or visual scene analysis.
-
-### Definition of Ready
-
-- [ ] Minimal clip analysis fields are agreed.
-- [ ] Media fixture or mock strategy is available.
-
-### Definition of Done
-
-- [ ] First result is useful, honest, persisted, and visible.
-- [ ] Success and per-clip failure evidence is tested.
-
 ## Safe ZIP Extraction and Resource Limits
 
-**Business Rank:** 019  
-**Release Stage:** First Functional Increment  
+**Business Rank:** 018  
+**Release Stage:** Functional Prototype  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Verified for Core Cases; Requires Hardening
 
@@ -1444,10 +1367,105 @@ Malware scanning and media transcoding.
 - [ ] ZIP safety coverage includes current and credible malformed cases.
 - [ ] Worker failures are surfaced to batch state safely.
 
+## First Clip Analysis Result
+
+**Business Rank:** 019  
+**Release Stage:** Functional Prototype  
+**Fibonacci Estimate:** 8  
+**Current Implementation Assessment:** Partially Implemented; Missing Validation
+
+### User Story
+
+**As a** creator  
+**I need** ClipSense to produce an understandable first analysis result  
+**So that** I can see value from uploaded footage before advanced storytelling exists.
+
+### Product Outcome
+
+At least one safely extracted clip produces transcript text where possible, a summary, simple mood, simple role, topic, duration, and visible result data.
+
+### Business Value
+
+This proves the core pre-editing loop: source footage becomes structured review material.
+
+### Repository Evidence
+
+Worker `process_batch` extracts audio with FFmpeg, transcribes with Whisper, summarizes by truncation, classifies simple mood and role, calculates duration through `ffmpeg.probe`, and inserts clips. UI displays title, summary, mood, role, and duration but not full transcript.
+
+### Functional Requirements and Business Rules
+
+Process only videos that passed safe ZIP extraction into clip records with filename, title, transcript, summary, mood, role, topic, duration, and created timestamp. Store empty transcript only with an explicit warning or per-clip failure state.
+
+### Consumer Safety and Trust
+
+Mark AI analysis as generated and potentially imperfect. Do not hide failed transcription behind a neutral-looking summary.
+
+### Data and State Requirements
+
+Clip records must belong to one batch and be ordered predictably. Duration should aggregate into batch duration.
+
+### Failure and Fallback Behaviour
+
+If one clip fails transcription, the batch should record a per-clip failure and continue where safe.
+
+### Edge Cases
+
+No audio track, unsupported codec, very short clips, very long clips, non-English speech, silence, FFmpeg probe failure, and model timeout.
+
+### Security and Privacy Requirements
+
+Transcripts are sensitive generated data and must be protected by the same authorization as source media.
+
+### Accessibility Requirements
+
+Results should be readable with semantic headings and not depend only on color-coded mood/role.
+
+### Performance and Reliability Requirements
+
+Processing time must be bounded by documented prototype expectations and large-file limits.
+
+### Observability and Operational Requirements
+
+Record per-stage durations and failure categories for extract, transcribe, analyze, persist, and vector upsert.
+
+### Assumptions
+
+Local Whisper and heuristic summary/classification are acceptable for the prototype.
+
+### Dependencies
+
+Safe ZIP Extraction and Resource Limits; Redis Job Enqueue and Worker Startup; Batch Schema and State Model.
+
+### Acceptance Criteria
+
+- [ ] **Given** a supported ZIP with one valid safely extracted video, **when** processing completes, **then** a clip record exists with transcript or explicit transcript failure, summary, role, mood, topic, and duration.
+- [ ] **Given** FFmpeg cannot extract audio for one clip, **when** processing continues, **then** the clip failure is visible and does not masquerade as successful analysis.
+- [ ] **Given** a creator opens batch detail, **when** clip results exist, **then** the visible cards expose the meaningful first result.
+
+### Validation Evidence
+
+- [ ] Worker integration test processes a tiny media fixture or mocked FFmpeg/Whisper path.
+- [ ] API test verifies clip result serialization.
+- [ ] UI test verifies result rendering for successful and failed clip analysis.
+
+### Out of Scope
+
+Advanced summaries, speaker diarization, timestamps, or visual scene analysis.
+
+### Definition of Ready
+
+- [ ] Minimal clip analysis fields are agreed.
+- [ ] Media fixture or mock strategy is available.
+
+### Definition of Done
+
+- [ ] First result is useful, honest, persisted, and visible.
+- [ ] Success and per-clip failure evidence is tested.
+
 ## Accessible Upload and Status UX
 
 **Business Rank:** 020  
-**Release Stage:** First Functional Increment  
+**Release Stage:** Functional Prototype  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Missing Validation
 
@@ -1541,7 +1559,7 @@ Full accessibility audit of every future feature.
 ## User-Owned Batch Authorization
 
 **Business Rank:** 021  
-**Release Stage:** MVP  
+**Release Stage:** Functional MVP  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Missing Validation
 
@@ -1597,7 +1615,7 @@ Shared workspaces and collaboration.
 ## Batch Results Review
 
 **Business Rank:** 022  
-**Release Stage:** MVP  
+**Release Stage:** Functional MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Partially Implemented; Requires Hardening
 
@@ -1693,7 +1711,7 @@ Transcript correction, clip preview playback, and search.
 ## Worker Processing Integration Tests
 
 **Business Rank:** 023  
-**Release Stage:** MVP  
+**Release Stage:** Functional MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Missing Validation
 
@@ -1747,104 +1765,10 @@ Benchmarking and model-quality scoring.
 - [ ] Worker pipeline has repeatable integration evidence.
 - [ ] Failure states are validated, not inferred from logs.
 
-## Basic Storyline Suggestion
-
-**Business Rank:** 024  
-**Release Stage:** MVP  
-**Fibonacci Estimate:** 8  
-**Current Implementation Assessment:** Partially Implemented; Requires Hardening
-
-### User Story
-
-**As a** creator  
-**I need** an initial suggested clip order  
-**So that** I can begin shaping a story instead of reviewing random footage.
-
-### Product Outcome
-
-ClipSense creates and displays one basic AI-assisted storyline for processed clips.
-
-### Business Value
-
-Storyline organization is the differentiator between a transcription utility and a pre-editor.
-
-### Repository Evidence
-
-Worker creates one storyline titled `AI Sequence for {name}` using sentence-transformer embeddings and KMeans cluster labels. UI displays storylines and ordered clip chips. There is no explanation, quality scoring, manual correction, alternate strategies, or validation of sequence usefulness.
-
-### Functional Requirements and Business Rules
-
-Create a storyline only when enough result data exists, persist ordered clips with positions, label it as AI-generated, and expose its limitations.
-
-### Consumer Safety and Trust
-
-Do not overclaim narrative intelligence. Make clear the order is a suggestion.
-
-### Data and State Requirements
-
-Storyline positions must be stable, unique per storyline, and tied to clips in the same batch.
-
-### Failure and Fallback Behaviour
-
-If storyline generation fails but clips exist, show clips and mark storyline unavailable.
-
-### Edge Cases
-
-One clip, many clips, empty transcripts, identical embeddings, KMeans errors, and vector store outage.
-
-### Security and Privacy Requirements
-
-Storylines inherit batch authorization and must not include private paths.
-
-### Accessibility Requirements
-
-Ordered sequence must be readable as an ordered list, not only visual chips.
-
-### Performance and Reliability Requirements
-
-Generation must avoid unbounded clustering cost for large batches.
-
-### Observability and Operational Requirements
-
-Record generation duration, clip count, strategy, and failure reason.
-
-### Assumptions
-
-One basic AI sequence is enough for MVP; advanced strategies are post-MVP.
-
-### Dependencies
-
-First Clip Analysis Result; Embedding and Vector Storage Baseline.
-
-### Acceptance Criteria
-
-- [ ] **Given** a processed batch with clips, **when** storyline generation succeeds, **then** the API returns a storyline with ordered clips from the same batch.
-- [ ] **Given** only one clip exists, **when** generation runs, **then** a valid one-clip storyline or clear no-storyline state is produced.
-- [ ] **Given** generation fails after clip processing, **when** the creator opens results, **then** clip review still works and storyline failure is visible.
-
-### Validation Evidence
-
-- [ ] Worker tests cover one-clip, multi-clip, and generation failure cases.
-- [ ] API/UI tests cover storyline serialization and accessible ordered display.
-
-### Out of Scope
-
-Manual reordering, explanation generation, and multiple storyline strategies.
-
-### Definition of Ready
-
-- [ ] MVP storyline strategy and fallback are defined.
-- [ ] Storyline schema constraints are available.
-
-### Definition of Done
-
-- [ ] Basic storyline appears when possible and fails safely when not.
-- [ ] Acceptance and validation evidence cover edge cases.
-
 ## Embedding and Vector Storage Baseline
 
-**Business Rank:** 025  
-**Release Stage:** MVP  
+**Business Rank:** 024  
+**Release Stage:** Functional MVP  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Requires Hardening
 
@@ -1898,10 +1822,104 @@ Advanced semantic search UX.
 - [ ] Vector storage is versioned, authorized through batch ownership, and lifecycle-aware.
 - [ ] Qdrant operational needs are captured for production release.
 
+## Basic Storyline Suggestion
+
+**Business Rank:** 025  
+**Release Stage:** Functional MVP  
+**Fibonacci Estimate:** 8  
+**Current Implementation Assessment:** Partially Implemented; Requires Hardening
+
+### User Story
+
+**As a** creator  
+**I need** an initial suggested clip order  
+**So that** I can begin shaping a story instead of reviewing random footage.
+
+### Product Outcome
+
+ClipSense creates and displays one basic AI-assisted storyline for processed clips.
+
+### Business Value
+
+Storyline organization is the differentiator between a transcription utility and a pre-editor.
+
+### Repository Evidence
+
+Worker creates one storyline titled `AI Sequence for {name}` using sentence-transformer embeddings and KMeans cluster labels. UI displays storylines and ordered clip chips. There is no explanation, quality scoring, manual correction, alternate strategies, or validation of sequence usefulness.
+
+### Functional Requirements and Business Rules
+
+Create a storyline only when enough result data and the MVP vector baseline exist, persist ordered clips with positions, label it as AI-generated, and expose its limitations.
+
+### Consumer Safety and Trust
+
+Do not overclaim narrative intelligence. Make clear the order is a suggestion.
+
+### Data and State Requirements
+
+Storyline positions must be stable, unique per storyline, and tied to clips in the same batch.
+
+### Failure and Fallback Behaviour
+
+If storyline generation fails but clips exist, show clips and mark storyline unavailable.
+
+### Edge Cases
+
+One clip, many clips, empty transcripts, identical embeddings, KMeans errors, and vector store outage.
+
+### Security and Privacy Requirements
+
+Storylines inherit batch authorization and must not include private paths.
+
+### Accessibility Requirements
+
+Ordered sequence must be readable as an ordered list, not only visual chips.
+
+### Performance and Reliability Requirements
+
+Generation must avoid unbounded clustering cost for large batches.
+
+### Observability and Operational Requirements
+
+Record generation duration, clip count, strategy, and failure reason.
+
+### Assumptions
+
+One basic AI sequence is enough for MVP; advanced strategies are post-MVP.
+
+### Dependencies
+
+First Clip Analysis Result; Embedding and Vector Storage Baseline.
+
+### Acceptance Criteria
+
+- [ ] **Given** a processed batch with clips and vector baseline available, **when** storyline generation succeeds, **then** the API returns a storyline with ordered clips from the same batch.
+- [ ] **Given** only one clip exists, **when** generation runs, **then** a valid one-clip storyline or clear no-storyline state is produced.
+- [ ] **Given** generation fails after clip processing, **when** the creator opens results, **then** clip review still works and storyline failure is visible.
+
+### Validation Evidence
+
+- [ ] Worker tests cover one-clip, multi-clip, and generation failure cases.
+- [ ] API/UI tests cover storyline serialization and accessible ordered display.
+
+### Out of Scope
+
+Manual reordering, explanation generation, and multiple storyline strategies.
+
+### Definition of Ready
+
+- [ ] MVP storyline strategy and fallback are defined.
+- [ ] Storyline schema constraints are available.
+
+### Definition of Done
+
+- [ ] Basic storyline appears when possible and fails safely when not.
+- [ ] Acceptance and validation evidence cover edge cases.
+
 ## Export Processed Batch Results
 
 **Business Rank:** 026  
-**Release Stage:** MVP  
+**Release Stage:** Functional MVP  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Defective in Browser Flow
 
@@ -1997,7 +2015,7 @@ EDL, XML, NLE plug-ins, and cloud export storage.
 ## Data Lifecycle Baseline
 
 **Business Rank:** 027  
-**Release Stage:** MVP  
+**Release Stage:** Functional MVP  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Not Implemented
 
@@ -2053,7 +2071,7 @@ Legal compliance by jurisdiction and enterprise retention policies.
 ## Failure Recovery Messaging
 
 **Business Rank:** 028  
-**Release Stage:** MVP  
+**Release Stage:** Functional MVP  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Requires Hardening
 
@@ -2148,7 +2166,7 @@ Full customer support ticketing system.
 ## Runtime Health Checks
 
 **Business Rank:** 029  
-**Release Stage:** MVP  
+**Release Stage:** Functional MVP  
 **Fibonacci Estimate:** 3  
 **Current Implementation Assessment:** Partially Implemented; Requires Expansion
 
@@ -2204,7 +2222,7 @@ Full metrics, traces, and alerting.
 ## Remove Unsafe Development Secrets and Defaults
 
 **Business Rank:** 030  
-**Release Stage:** MVP Hardening  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Requires Hardening
 
@@ -2260,7 +2278,7 @@ Cloud secret manager selection.
 ## Harden Browser Session Handling
 
 **Business Rank:** 031  
-**Release Stage:** MVP Hardening  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Requires Hardening
 
@@ -2324,7 +2342,7 @@ MVP can remain single-session if risks are accepted and documented.
 
 ### Dependencies
 
-Creator Account Access; Remove Unsafe Development Secrets and Defaults.
+Creator Account Access and Recovery; Remove Unsafe Development Secrets and Defaults.
 
 ### Acceptance Criteria
 
@@ -2354,7 +2372,7 @@ SSO, MFA, device management, and enterprise session policies.
 ## Fix Authenticated CSV Export
 
 **Business Rank:** 032  
-**Release Stage:** MVP Hardening  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 3  
 **Current Implementation Assessment:** Defective
 
@@ -2410,7 +2428,7 @@ New export formats.
 ## Persist Failure Reasons and Partial Processing State
 
 **Business Rank:** 033  
-**Release Stage:** MVP Hardening  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Requires Hardening
 
@@ -2466,7 +2484,7 @@ Automated retry policy, handled separately.
 ## Reliable Queue Acknowledgement and Dead-Letter Handling
 
 **Business Rank:** 034  
-**Release Stage:** MVP Hardening  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 13  
 **Current Implementation Assessment:** Requires Hardening
 
@@ -2522,7 +2540,7 @@ Replacing Redis with another broker unless justified by this design.
 ## Idempotent Processing and Duplicate Job Protection
 
 **Business Rank:** 035  
-**Release Stage:** MVP Hardening  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Not Implemented
 
@@ -2578,7 +2596,7 @@ User-triggered reprocessing with alternate settings.
 ## Accessible Results Review and Keyboard Navigation
 
 **Business Rank:** 036  
-**Release Stage:** MVP Hardening  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Missing Validation
 
@@ -2672,7 +2690,7 @@ Full third-party audit.
 ## End-to-End MVP Smoke Test
 
 **Business Rank:** 037  
-**Release Stage:** MVP Hardening  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Not Implemented
 
@@ -2767,7 +2785,7 @@ Load testing and advanced AI quality evaluation.
 ## Dependency Vulnerability Remediation
 
 **Business Rank:** 038  
-**Release Stage:** MVP Hardening  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Requires Hardening
 
@@ -2823,7 +2841,7 @@ Major framework migration unless required by security or support status.
 ## Container Build Hardening
 
 **Business Rank:** 039  
-**Release Stage:** MVP Hardening  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Requires Hardening
 
@@ -2880,7 +2898,7 @@ Kubernetes manifests and cloud registry policies.
 ## Production Configuration and Secret Management
 
 **Business Rank:** 040  
-**Release Stage:** Production Release  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Not Implemented
 
@@ -2936,7 +2954,7 @@ Specific cloud secret manager integration unless deployment target requires it.
 ## Privacy Notice, Retention, and Deletion Controls
 
 **Business Rank:** 041  
-**Release Stage:** Production Release  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 13  
 **Current Implementation Assessment:** Not Implemented
 
@@ -2993,7 +3011,7 @@ Enterprise legal retention holds and jurisdiction-specific compliance automation
 ## API Contract and Schema Validation
 
 **Business Rank:** 042  
-**Release Stage:** Production Release  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Not Implemented
 
@@ -3050,7 +3068,7 @@ Public third-party SDK release.
 ## Compose Runtime and Performance Validation
 
 **Business Rank:** 043  
-**Release Stage:** Production Release  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Missing Validation
 
@@ -3103,32 +3121,32 @@ Cloud load testing and autoscaling.
 - [ ] Full stack runtime is verified and documented.
 - [ ] Environment blockers are no longer unresolved for release.
 
-## AI Quality Evaluation Harness
+## Responsible AI Quality Evaluation Harness
 
 **Business Rank:** 044  
-**Release Stage:** Production Release  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Not Implemented
 
 ### Purpose
 
-Evaluate transcription, summary, classification, clustering, and storyline usefulness with repeatable fixtures and human review criteria.
+Evaluate transcription, summary, classification, clustering, storyline usefulness, confidence/uncertainty communication, and generated-versus-corrected distinctions with repeatable fixtures and human review criteria.
 
 ### Consumer, Business, or Risk-Reduction Value
 
-ClipSense value depends on AI output being useful and transparent enough for creators to trust and correct.
+ClipSense value depends on AI output being useful, reviewable, and transparent enough for creators to trust, correct, and challenge without mistaking suggestions for facts.
 
 ### Repository Evidence
 
-Current summaries are text truncation; mood and role are keyword heuristics; storylines use KMeans ordering. No evaluation fixtures, metrics, review rubric, model version records, or regression tests exist.
+Current summaries are text truncation; mood and role are keyword heuristics; storylines use KMeans ordering. No evaluation fixtures, metrics, review rubric, confidence representation, generated-versus-corrected labeling, model version records, or regression tests exist.
 
 ### Scope and Required Behaviour
 
-Create fixture batches, expected transcript/summary/classification tolerances, storyline review rubric, model version capture, regression comparison, and failure thresholds.
+Create fixture batches, expected transcript/summary/classification tolerances, storyline review rubric, model version capture, confidence or uncertainty representation, generated-versus-corrected labeling rules, regression comparison, model rollback expectations, and failure thresholds.
 
 ### Security, Privacy, Accessibility, or Operational Requirements
 
-Evaluation fixtures must be licensed or synthetic and must not contain private creator data.
+Evaluation fixtures must be licensed or synthetic and must not contain private creator data. AI limitation disclosure must be visible wherever generated summaries, classifications, or storylines may affect creator decisions.
 
 ### Dependencies
 
@@ -3136,19 +3154,19 @@ First Clip Analysis Result; Basic Storyline Suggestion.
 
 ### Acceptance Criteria
 
-- [ ] **Given** an evaluation fixture is processed, **when** outputs are generated, **then** transcript availability, summary relevance, classification, and storyline order are scored.
+- [ ] **Given** an evaluation fixture is processed, **when** outputs are generated, **then** transcript availability, summary relevance, classification, confidence or uncertainty, and storyline order are scored.
 - [ ] **Given** a model or prompt changes, **when** evaluation runs, **then** regressions are visible before release.
-- [ ] **Given** AI confidence is low or output is empty, **when** the UI displays results, **then** the creator sees appropriate caveats.
+- [ ] **Given** AI confidence is low, uncertainty is high, or output is empty, **when** the UI displays results, **then** the creator sees appropriate caveats and can distinguish generated output from user-corrected output.
 
 ### Validation Evidence
 
 - [ ] Evaluation harness runs on synthetic or licensed fixtures.
-- [ ] Release evidence includes model versions and quality notes.
+- [ ] Release evidence includes model versions, quality notes, limitation disclosure, and rollback implications.
 - [ ] Regression thresholds are documented.
 
 ### Out of Scope
 
-Claiming human-level narrative quality or fully automated editorial judgment.
+Claiming human-level narrative quality, fully automated editorial judgment, or bias-free analysis.
 
 ### Definition of Ready
 
@@ -3163,7 +3181,7 @@ Claiming human-level narrative quality or fully automated editorial judgment.
 ## Consumer Deletion and Cleanup Flow
 
 **Business Rank:** 045  
-**Release Stage:** Production Release  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Not Implemented
 
@@ -3258,7 +3276,7 @@ Account deletion and legal hold workflows.
 ## Database Migration and Rollback Discipline
 
 **Business Rank:** 046  
-**Release Stage:** Production Release  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Requires Hardening
 
@@ -3314,7 +3332,7 @@ Multi-tenant sharding and zero-downtime migration automation unless required by 
 ## Backup and Restore for Postgres and Qdrant
 
 **Business Rank:** 047  
-**Release Stage:** Production Release  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Defective for Current Runtime
 
@@ -3371,13 +3389,13 @@ Cross-region disaster recovery until production scale requires it.
 ## Observability and Incident Diagnostics
 
 **Business Rank:** 048  
-**Release Stage:** Production Release  
+**Release Stage:** Production-Ready MVP  
 **Fibonacci Estimate:** 13  
 **Current Implementation Assessment:** Partially Implemented; Requires Hardening
 
 ### Purpose
 
-Add structured logs, metrics, and diagnostic events that allow operators to understand upload, queue, worker, model, database, vector, export, and cleanup behavior.
+Add structured logs, privacy-respecting product analytics, metrics, and diagnostic events that allow operators to understand upload, queue, worker, model, database, vector, export, and cleanup behavior.
 
 ### Consumer, Business, or Risk-Reduction Value
 
@@ -3389,11 +3407,11 @@ API uses chi logger and `log.Println`. Worker prints `[worker]` messages. Health
 
 ### Scope and Required Behaviour
 
-Implement structured logging, correlation IDs, redaction, metrics for request latency, upload failures, queue depth, job duration, processing stage duration, failed jobs, disk usage, export failures, and cleanup. Define alerts and incident runbook.
+Implement structured logging, correlation IDs, redaction, metrics for request latency, upload failures, queue depth, job duration, processing stage duration, failed jobs, disk usage, export failures, cleanup, and privacy-respecting feature adoption. Define alerts and incident runbook.
 
 ### Security, Privacy, Accessibility, or Operational Requirements
 
-Logs and metrics must not include secrets, tokens, private media content, full transcripts, or unnecessary personal data.
+Logs, metrics, and product analytics must not include secrets, tokens, private media content, full transcripts, or unnecessary personal data.
 
 ### Dependencies
 
@@ -3404,11 +3422,13 @@ Runtime Health Checks; Failure Recovery Messaging.
 - [ ] **Given** a batch moves through upload, queue, processing, and export, **when** logs are inspected, **then** events can be correlated without exposing private content.
 - [ ] **Given** queue depth or failed jobs exceed thresholds, **when** monitoring runs, **then** operators receive an actionable alert.
 - [ ] **Given** an incident occurs, **when** the runbook is followed, **then** health, logs, metrics, and recent deploy evidence are available.
+- [ ] **Given** product usage is reviewed, **when** analytics are inspected, **then** operators can see adoption of upload, review, export, deletion, and recovery flows without exposing media or transcript content.
 
 ### Validation Evidence
 
 - [ ] Observability tests or smoke checks verify correlation ID propagation.
 - [ ] Metrics dashboard or documented query set covers MVP services.
+- [ ] Product analytics review verifies adoption signals are aggregated and privacy-respecting.
 - [ ] Redaction review verifies sensitive fields are excluded.
 
 ### Out of Scope
@@ -3418,23 +3438,136 @@ Distributed tracing everywhere unless justified by operational complexity.
 ### Definition of Ready
 
 - [ ] Key operational questions are listed.
-- [ ] Metrics and log fields are selected.
+- [ ] Metrics, analytics events, and log fields are selected.
 
 ### Definition of Done
 
-- [ ] Operators can diagnose common MVP incidents.
-- [ ] Sensitive data is excluded from observability outputs.
+- [ ] Operators can diagnose common MVP incidents and understand feature adoption.
+- [ ] Sensitive data is excluded from observability and analytics outputs.
 
-## Release Versioning and Support Runbooks
+## Usage Limits, Cost Controls, Abuse Prevention, and Media Rights
 
 **Business Rank:** 049  
-**Release Stage:** Production Release  
+**Release Stage:** Production-Ready MVP  
+**Fibonacci Estimate:** 8  
+**Current Implementation Assessment:** Not Implemented
+
+### Purpose
+
+Define and enforce the minimum usage, storage, processing, abuse-prevention, acceptable-use, and media-rights controls required before real-user use.
+
+### Consumer, Business, or Risk-Reduction Value
+
+ClipSense processes large media and expensive AI workloads. Without limits and rights communication, one user, abusive actor, or mistaken upload can exhaust storage, queue capacity, model budget, or legal trust.
+
+### Repository Evidence
+
+The API has a multipart parsing limit and the worker has ZIP extraction limits, but there is no user quota, batch quota, storage quota, processing-time limit, registration abuse control, acceptable-use notice, or media-rights confirmation. Compose uses unbounded local volumes.
+
+### Scope and Required Behaviour
+
+Set MVP limits for upload size, extracted size, file count, active batches, queued jobs, retained storage, daily processing, and retry attempts. Add user-facing media-rights confirmation and acceptable-use guidance for uploaded or linked footage. Add operator controls for disabling abusive accounts or pausing intake.
+
+### Security, Privacy, Accessibility, or Operational Requirements
+
+Limits must protect availability without exposing other users' usage. Media-rights and acceptable-use copy must be accessible before upload and link intake. Rate and quota enforcement should align with OWASP API guidance on unrestricted resource consumption and automated abuse.
+
+### Dependencies
+
+Upload Request Size and Type Enforcement; Privacy Notice, Retention, and Deletion Controls; Observability and Incident Diagnostics.
+
+### Acceptance Criteria
+
+- [ ] **Given** a creator exceeds an active batch, storage, upload, retry, or processing quota, **when** they submit work, **then** the request is rejected or deferred with a clear, safe message.
+- [ ] **Given** a creator uploads or submits media, **when** the intake form is used, **then** they receive an accessible media-rights and acceptable-use confirmation appropriate to the source type.
+- [ ] **Given** abuse or runaway processing is detected, **when** an operator intervenes, **then** intake can be paused or limited without corrupting existing batches.
+
+### Validation Evidence
+
+- [ ] API tests cover upload, active-batch, retry, and storage quota enforcement.
+- [ ] UI tests cover accessible quota and media-rights messaging.
+- [ ] Operational evidence shows quota metrics and intake pause behavior.
+
+### Out of Scope
+
+Billing, paid plans, and enterprise policy management.
+
+### Definition of Ready
+
+- [ ] MVP resource limits and acceptable-use wording are approved.
+- [ ] Metrics needed for quota enforcement are available.
+
+### Definition of Done
+
+- [ ] Real-user use is bounded by documented, tested limits.
+- [ ] Media-rights and acceptable-use expectations are visible before intake.
+
+## Controlled MVP Stabilization and Release Feedback
+
+**Business Rank:** 050  
+**Release Stage:** MVP Stabilization  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Not Implemented
 
 ### Purpose
 
-Define versioning, changelog, release notes, rollback decision points, support troubleshooting, and known limitation communication.
+Create a controlled stabilization loop after production-ready MVP validation and before public production launch.
+
+### Consumer, Business, or Risk-Reduction Value
+
+This prevents known release blockers from being deferred while still reserving space for defects and usability issues discovered through real runtime evidence.
+
+### Repository Evidence
+
+`docs/MVP_STABILIZATION.md` records earlier stabilization findings, but there is no formal controlled-release feedback process, issue triage rule, evidence checklist, or go/no-go loop before public release.
+
+### Scope and Required Behaviour
+
+Define controlled test cohort, release-gate evidence, defect severity rules, support intake, telemetry and privacy-respecting product analytics review, rollback rehearsal, accessibility review, privacy/deletion verification, performance notes, and public-release go/no-go criteria.
+
+### Security, Privacy, Accessibility, or Operational Requirements
+
+No known release-blocking security, privacy, accessibility, data-loss, deletion, or false-completion defect may be waived silently. Stabilization evidence must avoid private media content.
+
+### Dependencies
+
+Compose Runtime and Performance Validation; Responsible AI Quality Evaluation Harness; Usage Limits, Cost Controls, Abuse Prevention, and Media Rights.
+
+### Acceptance Criteria
+
+- [ ] **Given** a controlled MVP validation run completes, **when** findings are reviewed, **then** each defect is classified as release-blocking, stabilization-required, or post-release with rationale.
+- [ ] **Given** a release-blocking defect is found, **when** public launch is considered, **then** the launch is blocked until the defect is fixed or formally risk-accepted by the owner.
+- [ ] **Given** creator feedback identifies confusing status, export, privacy, or AI-output behavior, **when** stabilization planning runs, **then** the backlog is updated without duplicating existing items.
+
+### Validation Evidence
+
+- [ ] Controlled-release checklist includes security, privacy, accessibility, queue, deletion, backup, export, AI quality, usage-limit, product-analytics, and support evidence.
+- [ ] Stabilization review notes link each finding to an existing or new backlog item.
+
+### Out of Scope
+
+Public growth experiments and broad beta marketing.
+
+### Definition of Ready
+
+- [ ] Production-ready MVP evidence is complete.
+- [ ] Controlled validation cohort and feedback channels are defined.
+
+### Definition of Done
+
+- [ ] Stabilization findings are triaged and release-blocking issues are resolved or formally accepted.
+- [ ] Public production launch has a clear go/no-go record.
+
+## Release Versioning and Support Runbooks
+
+**Business Rank:** 051  
+**Release Stage:** Public Production Release  
+**Fibonacci Estimate:** 5  
+**Current Implementation Assessment:** Not Implemented
+
+### Purpose
+
+Define versioning, changelog, release notes, rollback decision points, support troubleshooting, service-status communication, and known limitation communication.
 
 ### Consumer, Business, or Risk-Reduction Value
 
@@ -3446,26 +3579,27 @@ Creators and operators need predictable releases and clear support paths when be
 
 ### Scope and Required Behaviour
 
-Establish version naming, release checklist, release notes, rollback criteria, support triage, known limitations, incident escalation, and maintenance release policy.
+Establish version naming, release checklist, release notes, rollback criteria, support triage, service-status communication, known limitations, incident escalation, and maintenance release policy.
 
 ### Security, Privacy, Accessibility, or Operational Requirements
 
-Release notes must disclose material privacy, retention, security, accessibility, and AI behavior changes.
+Release notes and status communication must disclose material privacy, retention, security, accessibility, availability, and AI behavior changes.
 
 ### Dependencies
 
-Compose Runtime and Performance Validation; Observability and Incident Diagnostics.
+Controlled MVP Stabilization and Release Feedback; Compose Runtime and Performance Validation; Observability and Incident Diagnostics.
 
 ### Acceptance Criteria
 
 - [ ] **Given** a production release is proposed, **when** the checklist is reviewed, **then** tests, security, accessibility, privacy, backup, and rollback evidence are required.
 - [ ] **Given** a support issue arrives, **when** the runbook is followed, **then** operators can gather safe diagnostics without requesting private media unnecessarily.
 - [ ] **Given** a release changes AI output behavior, **when** notes are published, **then** creators see relevant limitations or migration guidance.
+- [ ] **Given** an outage or degraded processing occurs, **when** status communication is needed, **then** creators receive clear availability and recovery information without exposing incident-sensitive details.
 
 ### Validation Evidence
 
 - [ ] Release checklist exists and maps to CI, smoke, security, accessibility, backup, and docs evidence.
-- [ ] Support runbook includes common upload, processing, auth, export, and deletion failures.
+- [ ] Support runbook includes common upload, processing, auth, export, deletion, quota, and status-communication failures.
 
 ### Out of Scope
 
@@ -3475,109 +3609,17 @@ Paid support tiers and service-level agreements.
 
 - [ ] Production release gates are known.
 - [ ] Common support scenarios are identified.
+- [ ] Service-status owner, channel, and update cadence are identified.
 
 ### Definition of Done
 
 - [ ] Release and support processes are documented and usable.
 - [ ] Production release cannot be approved without required evidence.
-
-## Direct Video Upload Intake
-
-**Business Rank:** 050  
-**Release Stage:** Post-MVP Release 1  
-**Fibonacci Estimate:** 8  
-**Current Implementation Assessment:** Not Implemented
-
-### User Story
-
-**As a** creator  
-**I need** to upload a single video directly  
-**So that** I do not have to wrap one clip in a ZIP archive.
-
-### Product Outcome
-
-The intake model accepts a supported direct video file and normalizes it into the same batch/clip pipeline as ZIP entries.
-
-### Business Value
-
-Direct upload is a natural next step after ZIP MVP and reduces friction for small projects.
-
-### Repository Evidence
-
-Docs state direct upload is intended future work. Current web dropzone accepts `application/zip`; API stores all uploads as `.zip`; worker expects `extract_zip`.
-
-### Functional Requirements and Business Rules
-
-Support allowlisted video extensions/codecs, content validation, size limits, metadata extraction, same storage ownership, same processing job type, and same review/export outputs.
-
-### Consumer Safety and Trust
-
-UI must distinguish direct-video and ZIP limits and avoid implying unsupported codecs will work.
-
-### Data and State Requirements
-
-Normalize direct video into a source asset and one clip or batch entry without creating a separate downstream pipeline.
-
-### Failure and Fallback Behaviour
-
-Unsupported codec or extraction failure creates safe failure reason and retry guidance.
-
-### Edge Cases
-
-No audio, unsupported codec, huge file, wrong extension, duplicate upload, interrupted transfer, and mobile browser upload.
-
-### Security and Privacy Requirements
-
-Use the same upload security controls as ZIP plus media content sniffing.
-
-### Accessibility Requirements
-
-File chooser and validation guidance must remain accessible.
-
-### Performance and Reliability Requirements
-
-Large direct files must respect request-size and timeout limits or wait for resumable upload support.
-
-### Observability and Operational Requirements
-
-Track intake type and validation outcomes.
-
-### Assumptions
-
-Direct upload should reuse the unified source pipeline.
-
-### Dependencies
-
-MVP production readiness; Media Format and Codec Compatibility Matrix.
-
-### Acceptance Criteria
-
-- [ ] **Given** a creator uploads a supported single video, **when** validation passes, **then** ClipSense creates a batch and processes it through the same worker result model.
-- [ ] **Given** a direct video has no audio, **when** processing runs, **then** the result explains transcript limitations instead of failing ambiguously.
-- [ ] **Given** a ZIP-only downstream assumption remains, **when** direct upload is tested, **then** the test fails until normalization is fixed.
-
-### Validation Evidence
-
-- [ ] API/worker integration tests cover direct video intake.
-- [ ] UI/E2E test covers direct upload guidance, validation, and result review.
-
-### Out of Scope
-
-Resumable upload and link import.
-
-### Definition of Ready
-
-- [ ] Media compatibility matrix is approved.
-- [ ] Unified source model supports non-ZIP assets.
-
-### Definition of Done
-
-- [ ] Direct videos use the shared pipeline and MVP controls.
-- [ ] ZIP and direct intake are both tested.
+- [ ] Status communication can be issued and updated during degraded service.
 
 ## Media Format and Codec Compatibility Matrix
 
-**Business Rank:** 051  
+**Business Rank:** 052  
 **Release Stage:** Post-MVP Release 1  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Partially Implemented; Missing Validation
@@ -3631,9 +3673,103 @@ Transcoding every unsupported media type.
 - [ ] Compatibility matrix is tested and documented.
 - [ ] Upload guidance reflects real media behavior.
 
+## Direct Video Upload Intake
+
+**Business Rank:** 053  
+**Release Stage:** Post-MVP Release 1  
+**Fibonacci Estimate:** 8  
+**Current Implementation Assessment:** Not Implemented
+
+### User Story
+
+**As a** creator  
+**I need** to upload a single video directly  
+**So that** I do not have to wrap one clip in a ZIP archive.
+
+### Product Outcome
+
+The intake model accepts a supported direct video file and normalizes it into the same batch/clip pipeline as ZIP entries.
+
+### Business Value
+
+Direct upload is a natural next step after ZIP MVP and reduces friction for small projects.
+
+### Repository Evidence
+
+Docs state direct upload is intended future work. Current web dropzone accepts `application/zip`; API stores all uploads as `.zip`; worker expects `extract_zip`.
+
+### Functional Requirements and Business Rules
+
+Support allowlisted video extensions/codecs from the compatibility matrix, content validation, size limits, metadata extraction, same storage ownership, same processing job type, and same review/export outputs.
+
+### Consumer Safety and Trust
+
+UI must distinguish direct-video and ZIP limits and avoid implying unsupported codecs will work.
+
+### Data and State Requirements
+
+Normalize direct video into a source asset and one clip or batch entry without creating a separate downstream pipeline.
+
+### Failure and Fallback Behaviour
+
+Unsupported codec or extraction failure creates safe failure reason and retry guidance.
+
+### Edge Cases
+
+No audio, unsupported codec, huge file, wrong extension, duplicate upload, interrupted transfer, and mobile browser upload.
+
+### Security and Privacy Requirements
+
+Use the same upload security controls as ZIP plus media content sniffing.
+
+### Accessibility Requirements
+
+File chooser and validation guidance must remain accessible.
+
+### Performance and Reliability Requirements
+
+Large direct files must respect request-size and timeout limits or wait for resumable upload support.
+
+### Observability and Operational Requirements
+
+Track intake type and validation outcomes.
+
+### Assumptions
+
+Direct upload should reuse the unified source pipeline.
+
+### Dependencies
+
+Media Format and Codec Compatibility Matrix; Upload Request Size and Type Enforcement; Usage Limits, Cost Controls, Abuse Prevention, and Media Rights.
+
+### Acceptance Criteria
+
+- [ ] **Given** a creator uploads a supported single video, **when** validation passes, **then** ClipSense creates a batch and processes it through the same worker result model.
+- [ ] **Given** a direct video has no audio, **when** processing runs, **then** the result explains transcript limitations instead of failing ambiguously.
+- [ ] **Given** a ZIP-only downstream assumption remains, **when** direct upload is tested, **then** the test fails until normalization is fixed.
+
+### Validation Evidence
+
+- [ ] API/worker integration tests cover direct video intake.
+- [ ] UI/E2E test covers direct upload guidance, validation, and result review.
+
+### Out of Scope
+
+Resumable upload and link import.
+
+### Definition of Ready
+
+- [ ] Media compatibility matrix is approved.
+- [ ] Unified source model supports non-ZIP assets.
+
+### Definition of Done
+
+- [ ] Direct videos use the shared pipeline and MVP controls.
+- [ ] ZIP and direct intake are both tested.
+
 ## Resumable Large Uploads
 
-**Business Rank:** 052  
+**Business Rank:** 054  
 **Release Stage:** Post-MVP Release 1  
 **Fibonacci Estimate:** 13  
 **Current Implementation Assessment:** Not Implemented
@@ -3728,7 +3864,7 @@ Peer-to-peer upload acceleration and cloud object storage unless chosen as imple
 
 ## User-Provided Link Intake
 
-**Business Rank:** 053  
+**Business Rank:** 055  
 **Release Stage:** Post-MVP Release 1  
 **Fibonacci Estimate:** 13  
 **Current Implementation Assessment:** Not Implemented
@@ -3793,7 +3929,7 @@ Link intake is introduced only after local upload safety and lifecycle controls 
 
 ### Dependencies
 
-Production release controls; Data Lifecycle Baseline.
+Usage Limits, Cost Controls, Abuse Prevention, and Media Rights; Data Lifecycle Baseline; Security and Privacy Baseline.
 
 ### Acceptance Criteria
 
@@ -3820,9 +3956,9 @@ Platform account integrations and DRM bypass.
 - [ ] Link intake is secure, bounded, lifecycle-aware, and unified with the media pipeline.
 - [ ] Rights and limitations are communicated to creators.
 
-## Transcript Review and Correction
+## Transcript Review, Time-Coded Playback, and Correction
 
-**Business Rank:** 054  
+**Business Rank:** 056  
 **Release Stage:** Post-MVP Release 2  
 **Fibonacci Estimate:** 13  
 **Current Implementation Assessment:** Not Implemented
@@ -3830,12 +3966,12 @@ Platform account integrations and DRM bypass.
 ### User Story
 
 **As a** creator  
-**I need** to review and correct transcripts  
+**I need** to review transcripts alongside the related media and correct transcript text  
 **So that** downstream summaries, classifications, search, and storylines reflect what was actually said.
 
 ### Product Outcome
 
-Creators can view generated transcripts, edit corrections, and trigger dependent analysis updates.
+Creators can view generated transcripts, navigate media by transcript timecodes where available, edit corrections, and trigger dependent analysis updates.
 
 ### Business Value
 
@@ -3843,11 +3979,11 @@ AI transcription is imperfect; correction turns ClipSense into a trustworthy rev
 
 ### Repository Evidence
 
-API returns `transcript`; UI does not show it. No transcript segments, correction model, edit history, re-analysis trigger, or permissions exist.
+API returns `transcript`; UI does not show it. No media preview, transcript segments, time-coded playback, correction model, edit history, re-analysis trigger, or permissions exist.
 
 ### Functional Requirements and Business Rules
 
-Display transcript text, allow correction, save original and corrected versions, record editor/time, mark downstream analysis stale, and reprocess affected summaries/embeddings/storylines.
+Display transcript text, support media preview and transcript-linked navigation when segment timing exists, allow correction, save original and corrected versions, record editor/time, mark downstream analysis stale, and reprocess affected summaries/embeddings/storylines.
 
 ### Consumer Safety and Trust
 
@@ -3863,7 +3999,7 @@ If re-analysis fails, keep correction and show stale derived outputs.
 
 ### Edge Cases
 
-Long transcript, empty transcript, multiple editors later, special characters, profanity, non-English text, and reprocessing conflict.
+Long transcript, empty transcript, missing timecodes, preview playback failure, multiple editors later, special characters, profanity, non-English text, and reprocessing conflict.
 
 ### Security and Privacy Requirements
 
@@ -3871,7 +4007,7 @@ Transcript edits are private batch data and require authorization.
 
 ### Accessibility Requirements
 
-Text editing controls need labels, keyboard operation, save status, and error association.
+Media controls and text editing controls need labels, keyboard operation, visible focus, captions or transcript alternatives where applicable, save status, and error association.
 
 ### Performance and Reliability Requirements
 
@@ -3887,23 +4023,24 @@ Segment timestamps can be added later if not present in MVP transcript output.
 
 ### Dependencies
 
-Batch Results Review; AI Quality Evaluation Harness.
+Batch Results Review; Responsible AI Quality Evaluation Harness.
 
 ### Acceptance Criteria
 
 - [ ] **Given** a generated transcript exists, **when** a creator edits and saves it, **then** the corrected transcript is stored without losing the original.
+- [ ] **Given** transcript segment timecodes exist, **when** the creator selects a transcript segment, **then** media preview navigates to the corresponding time or reports that linked playback is unavailable.
 - [ ] **Given** a correction changes text, **when** dependent analysis exists, **then** summaries, embeddings, and storylines are marked stale or reprocessed.
 - [ ] **Given** re-analysis fails, **when** the creator views results, **then** the corrected transcript remains saved and stale derived outputs are identified.
 
 ### Validation Evidence
 
 - [ ] API tests cover transcript save, authorization, version fields, and stale analysis state.
-- [ ] UI tests cover edit, validation, save, cancel, and accessible status.
+- [ ] UI tests cover media preview, transcript-linked navigation, edit, validation, save, cancel, and accessible status.
 - [ ] Worker tests cover correction-triggered re-analysis.
 
 ### Out of Scope
 
-Collaborative simultaneous transcript editing.
+Collaborative simultaneous transcript editing and full non-linear editing controls.
 
 ### Definition of Ready
 
@@ -3917,7 +4054,7 @@ Collaborative simultaneous transcript editing.
 
 ## Configurable Clip Classification
 
-**Business Rank:** 055  
+**Business Rank:** 057  
 **Release Stage:** Post-MVP Release 2  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Partially Implemented; Requires Productization
@@ -3944,7 +4081,7 @@ User-provided labels must be validated and safely rendered to prevent injection.
 
 ### Dependencies
 
-Transcript Review and Correction; AI Quality Evaluation Harness.
+Transcript Review, Time-Coded Playback, and Correction; Responsible AI Quality Evaluation Harness.
 
 ### Acceptance Criteria
 
@@ -3972,9 +4109,9 @@ Fully personalized ML models.
 - [ ] Classifications are documented, validated, and user-correctable where supported.
 - [ ] Taxonomy evolution has compatibility rules.
 
-## Creator Storyline Reordering
+## Creator Storyline Reordering, Timeline Notes, and Markers
 
-**Business Rank:** 056  
+**Business Rank:** 058  
 **Release Stage:** Post-MVP Release 2  
 **Fibonacci Estimate:** 13  
 **Current Implementation Assessment:** Not Implemented
@@ -3982,12 +4119,12 @@ Fully personalized ML models.
 ### User Story
 
 **As a** creator  
-**I need** to reorder, save, and compare storylines  
-**So that** AI suggestions become editable story plans.
+**I need** to reorder, annotate, and compare storylines  
+**So that** AI suggestions become editable story plans for an editor.
 
 ### Product Outcome
 
-Creators can duplicate an AI storyline, reorder clips, save a manual version, and export the chosen order.
+Creators can duplicate an AI storyline, reorder clips, add lightweight notes/tags/markers, save a manual version, and export the chosen order.
 
 ### Business Value
 
@@ -3995,11 +4132,11 @@ Creative control is essential; ClipSense should assist, not replace, editorial j
 
 ### Repository Evidence
 
-UI displays storylines but offers no editor. Database stores storylines and positions but no owner-edited metadata, versioning, locks, or export selection.
+UI displays storylines but offers no editor. Database stores storylines and positions but no owner-edited metadata, timeline review state, notes, tags, markers, versioning, locks, or export selection.
 
 ### Functional Requirements and Business Rules
 
-Support manual storyline creation from an AI sequence, reorder operations, title edits, version/source metadata, save validation, export selected storyline, and conflict-safe updates.
+Support manual storyline creation from an AI sequence, reorder operations, title edits, notes, tags, timeline markers, version/source metadata, save validation, export selected storyline, and conflict-safe updates.
 
 ### Consumer Safety and Trust
 
@@ -4015,7 +4152,7 @@ If save fails, preserve unsaved local changes where feasible and show retry.
 
 ### Edge Cases
 
-Duplicate clip, missing clip after deletion, concurrent edit later, empty storyline, mobile reorder, and keyboard-only reorder.
+Duplicate clip, missing clip after deletion, concurrent edit later, empty storyline, mobile reorder, keyboard-only reorder, long notes, duplicate marker names, and marker positions after clip duration changes.
 
 ### Security and Privacy Requirements
 
@@ -4023,7 +4160,7 @@ Storyline edits require batch ownership.
 
 ### Accessibility Requirements
 
-Reordering must be possible by keyboard, not only pointer drag/drop.
+Reordering, notes, tags, and markers must be possible by keyboard, not only pointer drag/drop.
 
 ### Performance and Reliability Requirements
 
@@ -4044,18 +4181,19 @@ Basic Storyline Suggestion; Accessible Results Review and Keyboard Navigation.
 ### Acceptance Criteria
 
 - [ ] **Given** an AI storyline exists, **when** the creator duplicates and reorders it, **then** a manual storyline is saved with valid positions.
+- [ ] **Given** a creator adds notes, tags, or markers to a storyline, **when** the storyline is saved and reopened, **then** those annotations remain associated with the intended clip or time position.
 - [ ] **Given** a keyboard-only creator reorders clips, **when** they save, **then** the order persists without pointer drag/drop.
 - [ ] **Given** a clip is removed or unavailable, **when** a storyline is loaded, **then** the issue is shown without corrupting saved order.
 
 ### Validation Evidence
 
-- [ ] API tests cover create, update order, authorization, and same-batch validation.
-- [ ] UI/E2E tests cover mouse and keyboard reordering.
+- [ ] API tests cover create, update order, annotations, authorization, and same-batch validation.
+- [ ] UI/E2E tests cover mouse and keyboard reordering plus note/tag/marker editing.
 - [ ] Accessibility test covers reorder controls and announcements.
 
 ### Out of Scope
 
-Multi-user simultaneous editing and NLE timeline rendering.
+Multi-user simultaneous editing and full NLE timeline rendering.
 
 ### Definition of Ready
 
@@ -4069,7 +4207,7 @@ Multi-user simultaneous editing and NLE timeline rendering.
 
 ## Accessibility Regression Program
 
-**Business Rank:** 057  
+**Business Rank:** 059  
 **Release Stage:** Post-MVP Release 2  
 **Fibonacci Estimate:** 5  
 **Current Implementation Assessment:** Not Implemented
@@ -4125,7 +4263,7 @@ Replacing human accessibility review with automation only.
 
 ## Searchable Clip Intelligence
 
-**Business Rank:** 058  
+**Business Rank:** 060  
 **Release Stage:** Post-MVP Release 2  
 **Fibonacci Estimate:** 13  
 **Current Implementation Assessment:** Not Implemented; Earlier Search Removed
@@ -4190,7 +4328,7 @@ Batch-level search should precede global search.
 
 ### Dependencies
 
-Embedding and Vector Storage Baseline; Transcript Review and Correction.
+Embedding and Vector Storage Baseline; Transcript Review, Time-Coded Playback, and Correction.
 
 ### Acceptance Criteria
 
@@ -4220,7 +4358,7 @@ Cross-workspace discovery and public search.
 
 ## Editor Interoperability Exports
 
-**Business Rank:** 059  
+**Business Rank:** 061  
 **Release Stage:** Post-MVP Release 2  
 **Fibonacci Estimate:** 13  
 **Current Implementation Assessment:** Not Implemented
@@ -4247,7 +4385,7 @@ Exports must not leak server paths and must make private data inclusion clear.
 
 ### Dependencies
 
-Creator Storyline Reordering; Media Format and Codec Compatibility Matrix.
+Creator Storyline Reordering, Timeline Notes, and Markers; Media Format and Codec Compatibility Matrix.
 
 ### Acceptance Criteria
 
@@ -4275,9 +4413,9 @@ Native plug-ins for Adobe, DaVinci, or Final Cut.
 - [ ] Export format is tested with fixtures and documented limitations.
 - [ ] Unsupported editor claims are not made.
 
-## Project History and Reprocessing
+## Project History, Saved Review State, and Reprocessing
 
-**Business Rank:** 060  
+**Business Rank:** 062  
 **Release Stage:** Post-MVP Release 2  
 **Fibonacci Estimate:** 13  
 **Current Implementation Assessment:** Not Implemented
@@ -4285,12 +4423,12 @@ Native plug-ins for Adobe, DaVinci, or Final Cut.
 ### User Story
 
 **As a** creator  
-**I need** to revisit projects and reprocess results  
-**So that** corrections, model improvements, or failed jobs can produce better outputs.
+**I need** to revisit projects, resume review where I left off, and reprocess results  
+**So that** corrections, model improvements, or failed jobs can produce better outputs without losing my review context.
 
 ### Product Outcome
 
-Batch history supports reprocessing with clear versioning and preservation or replacement of prior results.
+Batch history supports saved review state, reprocessing with clear versioning, and preservation or replacement of prior results.
 
 ### Business Value
 
@@ -4298,11 +4436,11 @@ AI systems evolve; creators need a controlled way to benefit from improvements w
 
 ### Repository Evidence
 
-Dashboard lists batches but no project model, reprocess action, processing version, model version display, or result versioning exists.
+Dashboard lists batches but no project model, saved review position, reviewed/unreviewed state, reprocess action, processing version, model version display, or result versioning exists.
 
 ### Functional Requirements and Business Rules
 
-Support project/batch history, reprocess request, versioned results, cancellation or locking during reprocess, stale result display, and rollback to prior output where feasible.
+Support project/batch history, saved review position, reviewed/unreviewed markers, reprocess request, versioned results, cancellation or locking during reprocess, stale result display, and rollback to prior output where feasible.
 
 ### Consumer Safety and Trust
 
@@ -4318,7 +4456,7 @@ If reprocess fails, preserve prior successful results and show new failure.
 
 ### Edge Cases
 
-Deleted source asset, changed transcript correction, model unavailable, queue duplicate, and concurrent delete.
+Deleted source asset, changed transcript correction, model unavailable, queue duplicate, concurrent delete, and saved review state that references a removed clip.
 
 ### Security and Privacy Requirements
 
@@ -4334,7 +4472,7 @@ Reprocessing must use idempotent queue behavior and avoid duplicate outputs.
 
 ### Observability and Operational Requirements
 
-Track reprocess reason, version, duration, and outcome.
+Track review-state saves, reprocess reason, version, duration, and outcome.
 
 ### Assumptions
 
@@ -4342,18 +4480,19 @@ Project history may start as batch history before richer project grouping.
 
 ### Dependencies
 
-Idempotent Processing and Duplicate Job Protection; Model Upgrade and Compatibility Management.
+Idempotent Processing and Duplicate Job Protection; Responsible AI Quality Evaluation Harness.
 
 ### Acceptance Criteria
 
+- [ ] **Given** a creator reviews clips and leaves the batch, **when** they return, **then** saved review position or reviewed state is restored without exposing another user's activity.
 - [ ] **Given** a creator requests reprocessing, **when** prior results exist, **then** the system preserves or explicitly replaces them according to chosen policy.
 - [ ] **Given** reprocessing fails, **when** the creator views the batch, **then** prior usable results remain available.
 - [ ] **Given** model versions changed, **when** results are compared, **then** generated output version is visible.
 
 ### Validation Evidence
 
-- [ ] API/worker integration tests cover reprocess success, failure, and duplicate prevention.
-- [ ] UI tests cover confirmation, progress, and prior-result preservation.
+- [ ] API/worker integration tests cover review-state persistence, reprocess success, failure, and duplicate prevention.
+- [ ] UI tests cover saved review state, confirmation, progress, and prior-result preservation.
 
 ### Out of Scope
 
@@ -4371,7 +4510,7 @@ Branching collaborative project history.
 
 ## Account and Workspace Controls
 
-**Business Rank:** 061  
+**Business Rank:** 063  
 **Release Stage:** Post-MVP Release 3  
 **Fibonacci Estimate:** 13  
 **Current Implementation Assessment:** Not Implemented
@@ -4428,7 +4567,7 @@ Enterprise SSO, billing, and organization-wide compliance.
 
 ## Collaboration and Sharing Controls
 
-**Business Rank:** 062  
+**Business Rank:** 064  
 **Release Stage:** Post-MVP Release 3  
 **Fibonacci Estimate:** 13  
 **Current Implementation Assessment:** Not Implemented
@@ -4522,7 +4661,7 @@ Real-time co-editing and external public publishing.
 
 ## Model Upgrade and Compatibility Management
 
-**Business Rank:** 063  
+**Business Rank:** 065  
 **Release Stage:** Mature Product  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Not Implemented
@@ -4549,7 +4688,7 @@ Model downloads and caches must be controlled and not leak private media to exte
 
 ### Dependencies
 
-AI Quality Evaluation Harness; Embedding and Vector Storage Baseline.
+Responsible AI Quality Evaluation Harness; Embedding and Vector Storage Baseline.
 
 ### Acceptance Criteria
 
@@ -4579,7 +4718,7 @@ Training custom proprietary models from user data.
 
 ## Maintenance, Deprecation, and Responsible Retirement
 
-**Business Rank:** 064  
+**Business Rank:** 066  
 **Release Stage:** Maintenance and Evolution  
 **Fibonacci Estimate:** 8  
 **Current Implementation Assessment:** Partially Implemented Through Legacy Files; Requires Process
@@ -4638,71 +4777,76 @@ Immediate deletion of legacy files without review.
 | Release Stage | Business Ranks | Release Boundary |
 | --- | --- | --- |
 | Product Foundation | 001-007 | Product, security, privacy, accessibility, environment, testing, CI, and documentation baselines are defined before feature delivery. |
-| First Functional Increment | 008-020 | A creator can access the app, understand ZIP intake, upload safely, create a batch, enqueue processing, and see the first useful result with accessible upload/status behavior. |
-| MVP | 021-029 | A safe, useful end-to-end ZIP journey exists: owned data, result review, basic storyline, export, lifecycle baseline, recovery messaging, and health checks. |
-| MVP Hardening | 030-039 | Unsafe defaults, session risks, export defect, failure state, queue reliability, idempotency, accessibility, E2E validation, dependencies, and containers are hardened. |
-| Production Release | 040-049 | Production config, privacy/deletion, contracts, runtime/performance evidence, AI quality, deletion flow, migrations, backup/recovery, observability, and release/support processes are complete. |
-| Post-MVP Release 1 | 050-053 | Intake expands to direct video, compatibility matrix, resumable upload, and link intake only after MVP safety and lifecycle controls exist. |
-| Post-MVP Release 2 | 054-060 | Product intelligence expands through transcript correction, configurable classification, editable storylines, accessibility regression, search, editor exports, and reprocessing. |
-| Post-MVP Release 3 | 061-062 | Account/workspace and collaboration controls are introduced after single-user authorization and deletion are mature. |
-| Mature Product and Maintenance | 063-064 | Model compatibility, long-term maintenance, deprecation, migration, and responsible retirement processes govern ongoing evolution. |
+| Functional Prototype | 008-020 | A creator can access the app, understand ZIP intake, upload safely, create a batch, enqueue processing, safely extract media, and see the first useful result with accessible upload/status basics. This is not public-release-ready. |
+| Functional MVP | 021-029 | A useful end-to-end ZIP journey exists: owned data, result review, vector-backed basic storyline, authenticated export, lifecycle baseline, recovery messaging, and health checks. This supports controlled internal validation only. |
+| Production-Ready MVP | 030-049 | The functional MVP is hardened for controlled real-user use: secrets/session/export/state/queue/idempotency/accessibility/E2E/dependency/container/config/privacy/deletion/contract/runtime/AI/migration/backup/observability/quota/abuse/media-rights controls are complete. |
+| MVP Stabilization | 050 | Controlled-release evidence is reviewed, release-blocking defects are resolved or formally accepted, and public-launch go/no-go criteria are recorded. |
+| Public Production Release | 051 | Release versioning, support runbooks, rollback, incident communication, service-status communication, consumer limitation notes, and operational ownership are ready. |
+| Post-MVP Release 1 | 052-055 | Intake expands to media compatibility, direct video, resumable upload, and user-provided links only after MVP safety and lifecycle controls exist. |
+| Post-MVP Release 2 | 056-062 | Product intelligence and creator workflow expand through transcript-linked playback/correction, configurable classification, timeline/storyline notes, accessibility regression, search, editor exports, and reprocessing. |
+| Post-MVP Release 3 | 063-064 | Account/workspace and collaboration controls are introduced after single-user authorization and deletion are mature. |
+| Mature Product and Maintenance | 065-066 | Model compatibility, long-term maintenance, deprecation, migration, and responsible retirement processes govern ongoing evolution. |
 
 ## 10. Coverage and Traceability Matrix
 
 | Coverage Area | Backlog Coverage | Current Coverage Assessment |
 | --- | --- | --- |
 | Product discovery | 001, 002 | Partially documented; contradictions require cleanup. |
-| Consumer journey | 008, 010, 012, 014, 016, 018, 022, 024, 026, 028 | Implemented in thin ZIP MVP form; needs hardening and evidence. |
-| User interface | 008, 010, 014, 016, 020, 022, 026, 031, 036, 045, 050, 054, 056, 058, 062 | Basic UI exists; accessibility and state handling incomplete. |
-| API | 009, 012, 014, 015, 021, 026, 028, 032, 042, 045 | Core endpoints exist; contracts, errors, tests, and export auth need work. |
-| Worker | 017, 018, 019, 023, 024, 033, 035, 044, 060, 063 | Worker exists; integration, failure, idempotency, and quality gaps remain. |
-| Media processing | 018, 019, 023, 050, 051, 052, 053 | ZIP/video processing exists; compatibility and expanded intake are future. |
-| Database | 011, 021, 033, 041, 045, 046, 047 | Inline schema exists; migrations, constraints, deletion, backup need production work. |
-| Queue | 017, 034, 035, 060 | Redis list exists; reliable queue semantics missing. |
-| Vector storage | 025, 041, 047, 058, 063 | Qdrant upsert exists; lifecycle, snapshots, search, model version missing. |
-| Authentication | 008, 009, 030, 031 | Basic JWT auth exists; defaults and browser sessions need hardening. |
-| Authorization | 009, 021, 026, 045, 061, 062 | User filtering exists; cross-user tests and future roles missing. |
-| Security | 003, 012, 015, 019, 030, 031, 034, 038, 039, 040, 053 | ZIP safety partly tested; broader security hardening remains. |
-| Privacy | 003, 027, 041, 045, 047, 061, 064 | Retention and deletion are not implemented. |
-| Accessibility | 004, 020, 036, 045, 057, 056, 058, 062 | No validation evidence yet. |
-| AI quality | 018, 024, 044, 054, 055, 063 | Heuristic outputs exist; evaluation absent. |
-| Reliability | 016, 017, 029, 033, 034, 035, 037, 043, 048 | Health partly exists; queue and runtime validation gaps remain. |
-| Performance | 015, 018, 043, 052, 058 | No measured performance envelope. |
-| Observability | 028, 029, 033, 048, 049 | Logs and health are basic; metrics/alerts absent. |
-| Testing | 006, 019, 023, 037, 038, 042, 043, 044, 057 | Unit tests exist; integration/E2E/security/accessibility gaps remain. |
-| CI/CD | 007, 037, 038, 039, 043, 049 | CI exists; production gates and deployment evidence missing. |
-| Deployment | 039, 040, 043, 049 | Compose exists; production deployment not ready. |
+| Consumer journey | 008, 010, 012, 014, 016, 018, 019, 022, 025, 026, 028, 050, 051 | Implemented in thin ZIP prototype form; needs production-ready hardening and evidence. |
+| User interface | 008, 010, 014, 016, 020, 022, 026, 031, 036, 045, 056, 058, 060, 061, 064 | Basic UI exists; accessibility, media preview, saved state, and session handling are incomplete. |
+| API | 009, 012, 014, 015, 021, 026, 028, 032, 042, 045, 049, 053, 055 | Core endpoints exist; contracts, errors, quotas, lifecycle, and export auth need work. |
+| Worker | 017, 018, 019, 023, 024, 025, 033, 035, 044, 052, 062, 065 | Worker exists; integration, failure, idempotency, quality, and model-version gaps remain. |
+| Media processing | 018, 019, 023, 052, 053, 054, 055, 056, 061 | ZIP/video processing exists; compatibility, direct intake, playback, and professional export metadata are future. |
+| Database | 011, 021, 033, 041, 045, 046, 047, 056, 058, 062 | Inline schema exists; migrations, constraints, deletion, correction, annotations, and backup need production work. |
+| Queue | 017, 034, 035, 049, 062 | Redis list exists; reliable queue semantics and usage controls are missing. |
+| Vector storage | 024, 041, 047, 060, 065 | Qdrant upsert exists; lifecycle, snapshots, search, and model versioning are incomplete. |
+| Authentication | 008, 009, 030, 031 | Basic JWT auth exists; recovery, verification, defaults, and browser sessions need hardening. |
+| Authorization | 009, 021, 026, 045, 063, 064 | User filtering exists; cross-user tests and future workspace roles are missing. |
+| Security | 003, 008, 012, 015, 018, 030, 031, 034, 038, 039, 040, 049, 055 | ZIP safety partly tested; broader auth, abuse, dependency, and link-intake hardening remain. |
+| Privacy | 003, 027, 041, 045, 047, 049, 063, 066 | Retention, deletion, privacy communication, personal data export, and backup exceptions are not implemented. |
+| Accessibility | 004, 020, 036, 045, 056, 058, 059, 060, 064 | No validation evidence yet; media controls, timeline editing, and collaboration need accessibility coverage. |
+| AI quality | 019, 025, 044, 056, 057, 065 | Heuristic outputs exist; responsible AI evaluation, confidence, feedback, and rollback are absent. |
+| Reliability | 016, 017, 029, 033, 034, 035, 037, 043, 048, 050 | Health partly exists; queue, runtime validation, stabilization, and recovery gaps remain. |
+| Performance | 015, 019, 043, 049, 054, 060 | No measured performance or cost envelope exists. |
+| Observability | 028, 029, 033, 048, 049, 050, 051 | Logs and health are basic; metrics, alerts, support diagnostics, and launch evidence are absent. |
+| Testing | 006, 018, 023, 037, 038, 042, 043, 044, 050, 059 | Unit tests exist; integration/E2E/security/accessibility/runtime/AI validation gaps remain. |
+| CI/CD | 007, 037, 038, 039, 043, 050, 051 | CI exists; production gates and release evidence are incomplete. |
+| Deployment | 039, 040, 043, 050, 051 | Compose exists; production deployment evidence and rollback ownership are not ready. |
 | Backup | 047 | Current scripts mismatch Postgres runtime. |
-| Recovery | 028, 034, 035, 047, 048, 049 | Recovery mostly unimplemented. |
-| Documentation | 001, 002, 005, 007, 010, 041, 049, 064 | Documentation exists but requires hierarchy and truth cleanup. |
-| Operations | 029, 043, 047, 048, 049 | Operational maturity incomplete. |
-| Support | 028, 048, 049, 064 | Support runbooks absent. |
+| Recovery | 008, 028, 034, 035, 047, 048, 050, 051 | Account recovery, job recovery, backup recovery, and support recovery are mostly unimplemented. |
+| Documentation | 001, 002, 005, 007, 010, 041, 049, 051, 066 | Documentation exists but requires hierarchy, truth cleanup, privacy, acceptable-use, and support content. |
+| Operations | 029, 043, 047, 048, 049, 050, 051 | Operational maturity incomplete. |
+| Support | 028, 048, 050, 051, 066 | Support runbooks and service communication are absent. |
 | Retention | 027, 041, 045, 047 | Not implemented. |
-| Deletion | 041, 045, 064 | Not implemented. |
-| Maintenance | 038, 049, 063, 064 | No mature maintenance policy yet. |
-| Deprecation | 002, 064 | Legacy artifacts exist; deprecation process missing. |
+| Deletion | 041, 045, 063, 066 | Not implemented. |
+| Maintenance | 038, 051, 065, 066 | No mature maintenance policy yet. |
+| Deprecation | 002, 066 | Legacy artifacts exist; deprecation process missing. |
 
 ## 11. Dependency Map
 
 | Enables | Blocks or Enables |
 | --- | --- |
 | Product Vision and Consumer Boundaries | All ranked work, especially 002-007. |
-| Security and Privacy Baseline | 008, 009, 012, 021, 030, 031, 040, 041, 053. |
-| Accessibility Baseline | 020, 022, 036, 045, 056, 057, 058, 062. |
+| Security and Privacy Baseline | 008, 009, 012, 021, 030, 031, 040, 041, 049, 055. |
+| Accessibility Baseline | 020, 022, 036, 045, 056, 058, 059, 060, 064. |
 | Repository and Environment Baseline | 006, 007, 037, 039, 043. |
 | Batch Schema and State Model | 012, 014, 016, 021, 028, 033, 046. |
-| Secure ZIP Batch Upload | 013, 015, 017, 019, 023. |
-| First Clip Analysis Result | 022, 023, 024, 025, 044. |
-| Embedding and Vector Storage Baseline | 024, 041, 047, 058, 063. |
-| Export Processed Batch Results | 032, 037, 059. |
-| Data Lifecycle Baseline | 041, 045, 047, 053, 064. |
-| Reliable Queue Acknowledgement and Dead-Letter Handling | 035, 060. |
-| Idempotent Processing and Duplicate Job Protection | 060 and safe retry/reprocess capabilities. |
-| Container Build Hardening | 040, 043, production release readiness. |
-| Privacy Notice, Retention, and Deletion Controls | 045, 061, 064. |
+| Secure ZIP Batch Upload | 013, 015, 017, 018, 023. |
+| Safe ZIP Extraction and Resource Limits | 019 and all downstream clip analysis. |
+| First Clip Analysis Result | 022, 023, 024, 025, 044, 052. |
+| Embedding and Vector Storage Baseline | 025, 041, 047, 060, 065. |
+| Export Processed Batch Results | 032, 037, 061. |
+| Data Lifecycle Baseline | 041, 045, 047, 055, 066. |
+| Reliable Queue Acknowledgement and Dead-Letter Handling | 035, 062. |
+| Idempotent Processing and Duplicate Job Protection | 062 and safe retry/reprocess capabilities. |
+| Container Build Hardening | 040, 043, production-ready MVP readiness. |
+| Privacy Notice, Retention, and Deletion Controls | 045, 049, 063, 066. |
 | API Contract and Schema Validation | 046, post-MVP client stability. |
-| End-to-End MVP Smoke Test | Production release approval and regression gating. |
-| Model Upgrade and Compatibility Management | Reprocessing, search, future AI upgrades, and mature maintenance. |
+| Responsible AI Quality Evaluation Harness | 056, 057, 062, 065. |
+| End-to-End MVP Smoke Test | Production-ready MVP approval and regression gating. |
+| Usage Limits, Cost Controls, Abuse Prevention, and Media Rights | 050, 053, 055 and public release readiness. |
+| Controlled MVP Stabilization and Release Feedback | 051 and public launch approval. |
+| Model Upgrade and Compatibility Management | Future AI upgrades and mature maintenance; reprocessing uses earlier AI quality evidence first. |
 | Account and Workspace Controls | Collaboration and sharing controls. |
 
 ## 12. Existing Implementation Mapping
@@ -4715,11 +4859,11 @@ Immediate deletion of legacy files without review.
 | `apps/api/main.go` inline `migrate()` | 011, 046 | Requires Hardening; no migrations, rollback, constraints, foreign keys, or indexes. |
 | `createBatch` upload handling | 012, 014, 015, 017 | Partially Implemented; saves archive and enqueues job, but validation, cleanup, and limits need hardening. |
 | `loadBatch`, `listBatches`, `getBatch` | 014, 021, 022 | Partially Implemented; user filtering exists, cross-user and partial-state tests missing. |
-| `exportBatch` | 026, 032, 059 | Partially Implemented; API supports JSON/CSV, browser CSV path defective. |
+| `exportBatch` | 026, 032, 061 | Partially Implemented; API supports JSON/CSV, browser CSV path defective. |
 | `apps/api/main_test.go` | 006, 009, 029 | Verified for limited cases; coverage is narrow. |
-| `apps/api/ai_worker/main.py` | 017, 018, 023, 024, 025, 033, 035, 044, 063 | Partially Implemented; real processing exists, but failure, idempotency, integration, model quality, and versioning gaps remain. |
-| `apps/api/ai_worker/zip_safety.py` | 019 | Verified for core ZIP safety tests; additional malformed cases and API alignment needed. |
-| `apps/api/ai_worker/tests/test_zip_safety.py` | 019 | Verified; 7 tests passed locally. |
+| `apps/api/ai_worker/main.py` | 017, 018, 019, 023, 024, 025, 033, 035, 044, 062, 065 | Partially Implemented; real processing exists, but failure, idempotency, integration, model quality, reprocessing, and versioning gaps remain. |
+| `apps/api/ai_worker/zip_safety.py` | 018 | Verified for core ZIP safety tests; additional malformed cases and API alignment needed. |
+| `apps/api/ai_worker/tests/test_zip_safety.py` | 018 | Verified; 7 tests passed locally. |
 | `docker-compose.yml` | 005, 029, 039, 043, 047 | Partially Implemented; local stack defined, production hardening and runtime validation missing. |
 | `apps/api/Dockerfile` | 039 | Requires Hardening; root runtime and `go mod tidy` during build. |
 | `apps/api/ai_worker/Dockerfile` | 039 | Defective Risk; does not copy `zip_safety.py` even though `main.py` imports it. |
@@ -4728,13 +4872,18 @@ Immediate deletion of legacy files without review.
 | `.env.example` | 005, 030, 040 | Partially Implemented; documents env values, needs mode-specific validation and secret handling. |
 | `scripts/database/backup.sh` and `restore.sh` | 047 | Defective for current runtime; scripts target SQLite while Compose uses Postgres. |
 | `infra/scripts/monitoring/setup-prometheus.sh` | 048 | Not Implemented; placeholder TODO. |
-| `infra/scripts/deploy/deploy.sh` and build scripts | 043, 049 | Partial local wrappers; not production deployment or release evidence. |
+| `infra/scripts/deploy/deploy.sh` and build scripts | 043, 051 | Partial local wrappers; not production deployment or release evidence. |
 | `docs/MVP_STABILIZATION.md` | Many early items | Useful evidence; accurately notes several current limitations. |
-| `CS.md`, `CS.txt`, `apps/app`, `apps/package/packages`, `apps/web/src/source`, `apps/api/apis`, `1807ish/*` | 001, 002, 064 | Legacy or aspirational; must not be treated as implemented capability. |
-| Missing root README | 005, 007, 049 | Not Implemented. |
+| `CS.md`, `CS.txt`, `apps/app`, `apps/package/packages`, `apps/web/src/source`, `apps/api/apis`, `1807ish/*` | 001, 002, 066 | Legacy or aspirational; must not be treated as implemented capability. |
+| Missing root README | 005, 007, 051 | Not Implemented. |
 | Missing delete endpoints and cleanup jobs | 027, 041, 045 | Not Implemented. |
 | Missing OpenAPI/contract | 042 | Not Implemented. |
-| Missing E2E/accessibility/security scans | 037, 038, 057 | Not Implemented or blocked by environment. |
+| Missing account verification and recovery flows | 008 | Not Implemented. |
+| Missing quota, cost-control, abuse-prevention, and media-rights controls | 049 | Not Implemented. |
+| Missing controlled-release feedback and go/no-go loop | 050 | Not Implemented. |
+| Missing media preview, transcript-linked playback, and correction state | 056 | Not Implemented. |
+| Missing saved review state and reprocessing controls | 062 | Not Implemented. |
+| Missing E2E/accessibility/security scans | 037, 038, 059 | Not Implemented or blocked by environment. |
 
 ## 13. Research References
 
@@ -4743,12 +4892,20 @@ These sources materially influenced the backlog:
 - OWASP File Upload Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
 - OWASP API Security Top 10 2023: https://owasp.org/API-Security/editions/2023/en/0x00-header/
 - OWASP Authentication Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+- OWASP Forgot Password Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
 - OWASP Session Management Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
 - OWASP JSON Web Token Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
+- OWASP API4:2023 Unrestricted Resource Consumption: https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/
+- OWASP Automated Threats to Web Applications: https://owasp.org/www-project-automated-threats-to-web-applications/
 - NIST SP 800-218 Secure Software Development Framework: https://csrc.nist.gov/publications/detail/sp/800-218/final
+- NIST SP 800-63-4 Digital Identity Guidelines: https://pages.nist.gov/800-63-4/
+- NIST SP 800-63B-4 Authentication and Authenticator Management: https://pages.nist.gov/800-63-4/sp800-63b.html
 - NIST Privacy Framework: https://www.nist.gov/privacy-framework
 - NIST AI Risk Management Framework: https://www.nist.gov/itl/ai-risk-management-framework
 - W3C Web Content Accessibility Guidelines 2.2: https://www.w3.org/TR/WCAG22/
+- W3C Media Accessibility User Requirements: https://www.w3.org/TR/media-accessibility-reqs/
+- W3C WebVTT: The Web Video Text Tracks Format: https://www.w3.org/TR/webvtt1/
+- W3C WAI Making Audio and Video Media Accessible, transcripts guidance: https://www.w3.org/WAI/media/av/transcripts/
 - WAI Forms Tutorial: https://www.w3.org/WAI/tutorials/forms/
 - Next.js deployment documentation: https://nextjs.org/docs/app/building-your-application/deploying
 - Go `net/http` package documentation including request body limiting support: https://pkg.go.dev/net/http
@@ -4761,9 +4918,11 @@ These sources materially influenced the backlog:
 - Dockerfile reference for `USER` and build behavior: https://docs.docker.com/reference/dockerfile/
 - GitHub Actions security hardening documentation: https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions
 - FFmpeg official documentation: https://ffmpeg.org/documentation.html
+- FFmpeg `ffprobe` documentation: https://ffmpeg.org/ffprobe.html
 - npm audit command documentation: https://docs.npmjs.com/cli/v10/commands/npm-audit
 - npm ci command documentation: https://docs.npmjs.com/cli/v10/commands/npm-ci
 - Adobe Premiere Pro supported file formats and import/export documentation: https://helpx.adobe.com/premiere-pro/using/supported-file-formats.html
+- Adobe Premiere Pro EDL export documentation: https://helpx.adobe.com/premiere/desktop/render-and-export/export-files/export-a-project-as-an-edl-file.html
 - Apple Final Cut Pro XML interchange documentation: https://developer.apple.com/documentation/professional_video_applications/final_cut_pro_xml
 
 ## 14. Backlog Quality Audit
@@ -4776,6 +4935,8 @@ These sources materially influenced the backlog:
 - [x] No title contains `CS-US`, `US`, or an artificial ID.
 - [x] Every item has a unique business rank.
 - [x] Items appear in strict business-rank order.
+- [x] Every mandatory dependency names an earlier item, with no dependency on a later rank.
+- [x] No later-ranked item remains a hidden prerequisite for an earlier delivery item.
 - [x] Every estimate uses an allowed Fibonacci value.
 - [x] No item exceeds `13`.
 - [x] Every acceptance criterion uses `- [ ]`.
@@ -4783,49 +4944,58 @@ These sources materially influenced the backlog:
 - [x] Definition of Ready uses `- [ ]`.
 - [x] Definition of Done uses `- [ ]`.
 - [x] No duplicated outcomes remain; overlapping risks are consolidated into scoped items.
+- [x] Every item is independently valuable or independently verifiable.
 - [x] No repeated label blocks are used.
 - [x] Boilerplate is minimized and item evidence is tied to ClipSense repository behavior.
 - [x] Consumer safety is addressed through upload, state, AI transparency, errors, session, export, retention, and deletion items.
 - [x] Security requirements are precise for auth, upload, session, queue, containers, dependencies, link intake, and secrets.
-- [x] Privacy and data lifecycle are covered through retention, deletion, backup, vector cleanup, and privacy notice items.
+- [x] Privacy and data lifecycle are covered through account recovery, retention, deletion, backup, vector cleanup, product analytics limits, and privacy notice items.
 - [x] Accessibility is covered in baseline, upload, results, deletion, reordering, search, and regression work.
-- [x] AI and processing quality are addressed through first result, storyline, evaluation, correction, classification, and model compatibility items.
+- [x] AI and processing quality are addressed through first result, embeddings, storyline, evaluation, correction, classification, and model compatibility items.
 - [x] Failure and recovery paths are addressed through state, failure reasons, queue reliability, idempotency, backups, observability, and support runbooks.
 - [x] Testing is proportional to risk and includes unit, integration, E2E, security, accessibility, contract, runtime, and AI evaluation needs.
 - [x] CI/CD and production operations are covered through CI foundation, E2E, dependency remediation, containers, config, runtime validation, release gates, and runbooks.
-- [x] MVP is complete, usable, and releasable only after safe upload, processing, review, export, lifecycle, and recovery are in place.
-- [x] MVP hardening is clearly separated from initial MVP delivery.
-- [x] Production release requirements are defined.
+- [x] Functional prototype, functional MVP, production-ready MVP, stabilization, and public production release boundaries are distinct.
+- [x] Functional MVP is usable for controlled validation only and is not described as public-release-ready.
+- [x] Production-ready MVP requirements include usage limits, cost controls, abuse prevention, media-rights communication, observability, and AI quality evidence.
+- [x] Public production release requirements include release versioning, support runbooks, rollback criteria, incident communication, service-status communication, and limitation notes.
 - [x] Post-MVP releases are progressive and do not label advanced intake, correction, search, collaboration, or editor interoperability as MVP.
 - [x] Mature product requirements are defined through model compatibility and maintenance/retirement practices.
 - [x] Maintenance, migration, deprecation, and product evolution are covered.
+- [x] Media preview and transcript-linked review needs are evaluated before transcript correction is considered complete.
+- [x] Account recovery, verification, deletion, and downloadable personal data needs are represented.
+- [x] Email, push, and background-completion notifications were evaluated and kept post-MVP unless controlled-release evidence makes them release-blocking.
+- [x] Product analytics and support/status operations are represented without collecting private media or transcript content.
+- [x] Usage, storage, processing cost, abuse, and acceptable-use/media-rights controls are represented before public launch.
+- [x] Professional editing interoperability has been evaluated and kept post-MVP through editor export and interchange work.
 - [x] Current implementation and future intent are clearly separated.
 - [x] Repository evidence supports implementation assessments.
 - [x] Research sources are recorded accurately and are limited to sources that influenced backlog requirements.
+- [x] The final audit is limited to conditions verified during this refinement pass.
 
 ## Backlog Classification Summary
 
 These counts are intentionally cross-cutting except for the total item count and consumer-story count. A single backlog item can legitimately contribute to security, accessibility, QA, DevOps, or maintenance at the same time.
 
-- Total backlog items: 64
+- Total backlog items: 66
 - Consumer or operator stories: 23
-- Technical enablers: 20
+- Technical enablers: 21
 - Defects: 7
-- Security and privacy items: 20
+- Security and privacy items: 22
 - Accessibility-focused items: 4
-- QA and validation items: 9
-- DevOps and operational items: 9
-- Documentation and maintenance items: 6
+- QA and validation items: 10
+- DevOps and operational items: 11
+- Documentation and maintenance items: 7
 
 ### Classification by Rank
 
-- Consumer or operator stories: 008, 010, 012, 014, 016, 018, 020, 022, 024, 026, 028, 031, 036, 037, 045, 050, 052, 053, 054, 056, 058, 060, 062.
-- Technical enablers: 001, 005, 006, 009, 011, 013, 015, 017, 023, 025, 027, 029, 035, 042, 044, 046, 051, 055, 061, 063.
+- Consumer or operator stories: 008, 010, 012, 014, 016, 019, 020, 022, 025, 026, 028, 031, 036, 037, 045, 053, 054, 055, 056, 058, 060, 062, 064.
+- Technical enablers: 001, 005, 006, 009, 011, 013, 015, 017, 018, 023, 024, 027, 029, 035, 042, 044, 046, 052, 057, 063, 065.
 - Defects: 002, 030, 032, 033, 038, 039, 047.
-- Security and privacy items: 003, 008, 009, 012, 015, 019, 021, 027, 030, 031, 034, 038, 039, 040, 041, 045, 047, 053, 061, 062.
-- Accessibility-focused items: 004, 020, 036, 057.
-- QA and validation items: 006, 019, 023, 037, 038, 042, 043, 044, 057.
-- DevOps and operational items: 007, 017, 029, 039, 040, 043, 047, 048, 049.
-- Documentation and maintenance primary items: 001, 002, 005, 007, 049, 064.
+- Security and privacy items: 003, 008, 009, 012, 015, 018, 021, 027, 030, 031, 034, 038, 039, 040, 041, 045, 047, 049, 053, 055, 063, 064.
+- Accessibility-focused items: 004, 020, 036, 059.
+- QA and validation items: 006, 018, 023, 037, 038, 042, 043, 044, 050, 059.
+- DevOps and operational items: 007, 017, 029, 039, 040, 043, 047, 048, 049, 050, 051.
+- Documentation and maintenance primary items: 001, 002, 005, 007, 049, 051, 066.
 
 Note: Accessibility requirements also appear inside many consumer stories; the accessibility-focused count lists items whose main reason for existing is accessibility delivery or regression prevention.
