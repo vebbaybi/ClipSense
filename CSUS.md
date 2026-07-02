@@ -4805,27 +4805,27 @@ These sources materially influenced the backlog:
 
 ## Backlog Classification Summary
 
-These counts use each item's primary purpose, while several items also contribute to secondary areas:
+These counts are intentionally cross-cutting except for the total item count and consumer-story count. A single backlog item can legitimately contribute to security, accessibility, QA, DevOps, or maintenance at the same time.
 
 - Total backlog items: 64
-- Consumer or operator stories: 22
-- Technical enablers: 18
+- Consumer or operator stories: 23
+- Technical enablers: 20
 - Defects: 7
-- Security and privacy primary items: 7
-- Accessibility primary items: 4
-- QA and validation primary items: 6
-- DevOps and operational primary items: 7
-- Documentation and maintenance primary items: 3
+- Security and privacy items: 20
+- Accessibility-focused items: 4
+- QA and validation items: 9
+- DevOps and operational items: 9
+- Documentation and maintenance items: 6
 
-### Primary Classification by Rank
+### Classification by Rank
 
 - Consumer or operator stories: 008, 010, 012, 014, 016, 018, 020, 022, 024, 026, 028, 031, 036, 037, 045, 050, 052, 053, 054, 056, 058, 060, 062.
 - Technical enablers: 001, 005, 006, 009, 011, 013, 015, 017, 023, 025, 027, 029, 035, 042, 044, 046, 051, 055, 061, 063.
 - Defects: 002, 030, 032, 033, 038, 039, 047.
-- Security and privacy primary items: 003, 019, 021, 034, 040, 041, 053.
-- Accessibility primary items: 004, 020, 036, 057.
-- QA and validation primary items: 006, 023, 037, 038, 042, 043, 044, 057.
-- DevOps and operational primary items: 007, 017, 029, 039, 043, 047, 048, 049.
+- Security and privacy items: 003, 008, 009, 012, 015, 019, 021, 027, 030, 031, 034, 038, 039, 040, 041, 045, 047, 053, 061, 062.
+- Accessibility-focused items: 004, 020, 036, 057.
+- QA and validation items: 006, 019, 023, 037, 038, 042, 043, 044, 057.
+- DevOps and operational items: 007, 017, 029, 039, 040, 043, 047, 048, 049.
 - Documentation and maintenance primary items: 001, 002, 005, 007, 049, 064.
 
-Note: Classification counts above intentionally count each item once in the headline totals by dominant work type; the rank lists show cross-cutting relevance, so some items appear in more than one thematic list.
+Note: Accessibility requirements also appear inside many consumer stories; the accessibility-focused count lists items whose main reason for existing is accessibility delivery or regression prevention.
