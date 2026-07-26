@@ -10,7 +10,7 @@ type Storyline = { id: string; title: string; type: string; clips: Clip[] }
 type Batch = { id: string; name: string; status: string }
 
 export default function BatchPage() {
-  const { token } = useAuthToken()
+  const { token, ready } = useAuthToken()
   const router = useRouter()
   const params = useParams()
   const id = params?.id as string
@@ -20,13 +20,17 @@ export default function BatchPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!token) return
+    if (!ready || !token) return
     api<{ batch: Batch; clips: Clip[]; storylines: Storyline[] }>(`/api/batches/${id}`, { method: 'GET' }, token)
       .then(res => { setBatch(res.batch); setClips(res.clips); setStorylines(res.storylines) })
       .catch(e => setError(e.message || 'Failed to load'))
-  }, [token, id])
+  }, [ready, token, id])
 
-  if (!token) { router.replace('/?login=1'); return null }
+  useEffect(() => {
+    if (ready && !token) router.replace('/?login=1')
+  }, [ready, router, token])
+
+  if (!ready || !token) return null
   if (!batch) return <div className="card">Loading... {error}</div>
 
   return (

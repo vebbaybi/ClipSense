@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import toast, { Toaster } from 'react-hot-toast'
@@ -8,8 +8,12 @@ import { useAuthToken } from '@/hooks/useAuthToken'
 
 export default function NewBatchPage() {
   const router = useRouter()
-  const { token } = useAuthToken()
+  const { token, ready } = useAuthToken()
   const [uploading, setUploading] = useState(false)
+
+  useEffect(() => {
+    if (ready && !token) router.replace('/?login=1')
+  }, [ready, router, token])
 
   const onDrop = async (acceptedFiles: File[]) => {
     if (!token) { router.replace('/?login=1'); return }
@@ -33,6 +37,8 @@ export default function NewBatchPage() {
   }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'application/zip': ['.zip'] } })
+
+  if (!ready || !token) return null
 
   return (
     <div className="space-y-6">
