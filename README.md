@@ -21,6 +21,34 @@ There is no desktop application, shared package workspace, OpenAPI contract,
 versioned migration system, or end-to-end test suite yet. Extensionless files that
 show directory trees are historical blueprints, not packages or applications.
 
+## Local Runtime
+
+The root `docker-compose.yml` is the authoritative local stack definition. On a
+machine with Docker and Docker Compose:
+
+```sh
+docker compose config
+docker compose build --no-cache
+docker compose up -d
+docker compose ps
+```
+
+The web application is served at `http://localhost:3000`. The public landing page
+is `/`; authenticated application routes begin at `/dashboard`. The API exposes:
+
+- `GET http://localhost:8080/api/health/live` for process liveness.
+- `GET http://localhost:8080/api/health/ready` for Postgres and Redis readiness.
+- `GET http://localhost:8080/api/health` as a compatibility alias for readiness.
+
+Stop the stack normally with:
+
+```sh
+docker compose down
+```
+
+The current Compose defaults are for local development only. In particular,
+production-sensitive secret and port hardening remains Sprint 1 Work Unit 2 work.
+
 ## Current Limitations
 
 The Docker MVP is not presently demonstrated end to end. The worker image omits a

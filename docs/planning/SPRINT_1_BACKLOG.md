@@ -5,6 +5,33 @@ and produce an authenticated, reviewable, exportable result using a clean enviro
 
 ## Ordered Backlog
 
+### Work Unit 1: Runtime Startup And Routing Baseline
+
+Status: **Review / QA**
+
+Source implementation and available local validation are complete. HP Docker
+verification remains required before this work unit can move to Done.
+
+- Worker image packages `main.py` and `zip_safety.py`, excludes local artifacts,
+  installs FFmpeg, and performs compilation/import/FFmpeg build smoke checks.
+- Canonical public routes are `/`, `/dashboard`,
+  `/dashboard/batches/new`, `/dashboard/batches/{id}`, and
+  `/dashboard/settings`.
+- API liveness, readiness, bounded dependency checks, explicit server timeouts,
+  signal handling, and graceful shutdown logic are implemented and unit tested.
+- Compose health-gates Postgres, Redis, Qdrant, API, worker, and web startup.
+- HP validation is tracked separately and remains Ready / Sprint.
+
+Evidence: `docs/audits/SPRINT_1_WORK_UNIT_1_REPORT.md`.
+
+### Work Unit 2: Security And Upload Hardening
+
+Status: **Ready / Sprint**, but should begin only after Work Unit 1 HP validation.
+
+Known inputs include JWT secret enforcement, upload hard limits, authenticated
+export repair, safe API error responses, and the other explicitly approved Work
+Unit 2 items. Work Unit 1 does not implement them.
+
 | ID | Value and exact scope | Out of scope | Dependencies | Acceptance and validation | Risk | Estimate | Owner | Status |
 |---|---|---|---|---|---|---:|---|---|
 | CS-017 | Repair worker image by packaging all imported source; verify import/startup | Model upgrade | Docker Engine | Image builds; worker imports; startup reaches dependency connection | Large ML image/download | 2 | Processor | Ready |
