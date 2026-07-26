@@ -15,7 +15,7 @@ This file records the scoped Sprint 0 cards and evidence to mirror into GitHub P
 | S0-008 Truthful root workflow | [#74](https://github.com/vebbaybi/ClipSense/issues/74) | Review / QA | `scripts/doctor.ps1`, root `README.md` |
 | S0-009 Kanban consolidation | [#75](https://github.com/vebbaybi/ClipSense/issues/75) | Bugged | Tracked legacy script guarded; candidate sync script is protected untracked work |
 | S0-010 Sprint 1 plan | [#76](https://github.com/vebbaybi/ClipSense/issues/76) | Review / QA | `docs/planning/SPRINT_1_BACKLOG.md` |
-| S0-011 Sprint 0 validation | [#77](https://github.com/vebbaybi/ClipSense/issues/77) | In progress | `docs/audits/SPRINT_0_VALIDATION.md` |
+| S0-011 Sprint 0 validation | [#77](https://github.com/vebbaybi/ClipSense/issues/77) | Review / QA | `docs/audits/SPRINT_0_VALIDATION.md` |
 | S0-012 Worktree safety | [#78](https://github.com/vebbaybi/ClipSense/issues/78) | Review / QA | `docs/audits/SPRINT_0_WORKTREE_SAFETY.md` |
 
 No Sprint 0 card is marked Done before review/acceptance. Runtime product issues remain

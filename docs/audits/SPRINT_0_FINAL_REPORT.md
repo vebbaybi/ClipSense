@@ -23,8 +23,9 @@ end-to-end workflow remain Sprint 1 work.
 
 ## 4. Ending Commit
 
-Pending at report creation. If a focused commit is created, attach it to Sprint 0
-issues before review.
+The foundation content and validation report are committed through `1052fd8`.
+The authoritative final hash after the metadata-only board-status reconciliation is
+reported by `git rev-parse HEAD` and in the Sprint 0 issue evidence comments.
 
 ## 5. Changed Files
 
@@ -160,7 +161,7 @@ to Project #19.
 
 - #67-#74, #76, #78: `Review / QA`
 - #75 Kanban consolidation: `Bugged`
-- #77 validation: initially `In progress`; move to `Review / QA` after this report is committed
+- #77 validation: `Review / QA`
 - No card is Done.
 
 ## 21. Validation
@@ -199,4 +200,3 @@ Sprint 1 may begin after this foundation receives review, a focused commit is at
 to issues #67-#78, and the HP machine is confirmed available for Docker/FFmpeg
 integration. Sprint 1 must start with worker packaging and route repair, not desktop
 or new product features.
-
