@@ -29,4 +29,3 @@ Use this order when sources disagree:
 A path shown inside a document is proposed until the filesystem contains it and an
 import, build, test, CI job, or documented command uses it. A plan or Kanban status
 is not runtime evidence.
-

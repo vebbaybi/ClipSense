@@ -56,4 +56,3 @@ Tauri 2 with Vite/React is the leading future option, not approved for Sprint 0/
 
 ## Approval Required
 Product, security, UI, operations, and desktop owners.
-

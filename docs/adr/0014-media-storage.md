@@ -58,4 +58,3 @@ Define lifecycle and asset identity in Sprint 1/2; do not add object storage in 
 
 ## Approval Required
 Product, security, operations, API, processor, and future desktop owners.
-

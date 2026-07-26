@@ -50,4 +50,3 @@ authoritative in a clean checkout.
 - Sprint 0 changes remain separable from the pre-existing untracked files.
 - Remote Kanban writes require a successful read-only inspection, self-test, and
   explicit evidence that the target is GitHub Project `ClipSense` number 19.
-

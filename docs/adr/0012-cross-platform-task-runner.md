@@ -56,4 +56,3 @@ Do not adopt in Sprint 0; evaluate Taskfile after Sprint 1 commands are proven.
 
 ## Approval Required
 Repository operations and contributor owners.
-

@@ -55,4 +55,3 @@ Use sqlc for Go after ADR 0004; define a separate internal processor write bound
 
 ## Approval Required
 API and data owners.
-

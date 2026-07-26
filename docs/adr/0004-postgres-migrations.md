@@ -56,4 +56,3 @@ Approve Goose for Sprint 1 only after existing-data baseline tests are designed.
 
 ## Approval Required
 API and operations owners.
-

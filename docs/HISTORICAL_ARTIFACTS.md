@@ -21,4 +21,3 @@ work, not retained repository history, until deliberately reviewed and committed
 No historical artifact was moved or deleted in Sprint 0. Relocation into a dedicated
 archive would create noisy path churn and could break undocumented external
 references; that cleanup requires a separate approved task.
-

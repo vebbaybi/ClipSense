@@ -56,4 +56,3 @@ dependencies.
 No Docker startup, production web build, lint pass, end-to-end workflow, or Kanban
 sync success is claimed. Generated `apps/web/tsconfig.tsbuildinfo` created by the
 type check was removed after verifying its path was inside the workspace.
-

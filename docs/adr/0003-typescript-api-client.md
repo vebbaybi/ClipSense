@@ -56,4 +56,3 @@ Compare Orval plain-fetch output with openapi-typescript before selection.
 
 ## Approval Required
 Web and API owners must approve after ADR 0001.
-

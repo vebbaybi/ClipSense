@@ -79,4 +79,3 @@ git ls-files
 git ls-files --others --exclude-standard
 rg --files -g '!node_modules' -g '!.next' -g '!.git'
 ```
-

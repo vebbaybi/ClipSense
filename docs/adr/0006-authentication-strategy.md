@@ -56,4 +56,3 @@ Adopt OIDC Authorization Code with PKCE long term; do not select a provider in S
 
 ## Approval Required
 Product, security, API, web, and future desktop owners.
-

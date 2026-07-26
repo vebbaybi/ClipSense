@@ -56,4 +56,3 @@ Evaluate oapi-codegen after ADR 0001 is approved.
 
 ## Approval Required
 API owner approval and a reviewed generated-code policy.
-

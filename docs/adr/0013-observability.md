@@ -56,4 +56,3 @@ Adopt OpenTelemetry conventions incrementally after Sprint 1 runtime repair.
 
 ## Approval Required
 Security, operations, API, processor, and web owners.
-

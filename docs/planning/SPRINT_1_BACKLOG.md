@@ -29,4 +29,3 @@ and produce an authenticated, reviewable, exportable result using a clean enviro
 - Use the HP machine for Docker/FFmpeg integration. Use the current Acer machine for
   focused source/tests. Mac browser validation is useful after routes and framework
   upgrade, but is not a substitute for the Docker smoke test.
-

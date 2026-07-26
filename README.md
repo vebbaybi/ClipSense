@@ -70,4 +70,3 @@ start or that the product workflow succeeds.
 - [Contribution rules](CONTRIBUTING.md)
 - [Agent guardrails](AGENTS.md)
 - [Kanban workflow](docs/operations/KANBAN_WORKFLOW.md)
-

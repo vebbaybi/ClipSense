@@ -55,4 +55,3 @@ Report date: 2026-07-26
 
 No replacement runtime code is introduced in Sprint 0. Consolidation work is assigned
 to Sprint 1 or an approved ADR-guided later sprint.
-

@@ -56,4 +56,3 @@ Use OpenAPI as the future public contract source after Sprint 1 route/error stab
 
 ## Approval Required
 API and web owners must approve before adding schema or generators.
-

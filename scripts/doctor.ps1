@@ -74,4 +74,3 @@ foreach ($Port in $Ports) {
 }
 
 Write-Host "Doctor completed. No tools or files were installed or modified."
-

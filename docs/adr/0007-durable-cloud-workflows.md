@@ -56,4 +56,3 @@ Do not adopt Temporal yet; specify and repair the MVP durability contract first.
 
 ## Approval Required
 API, processor, operations, and cost owners.
-

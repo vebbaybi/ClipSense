@@ -56,4 +56,3 @@ require an ADR decision before adoption.
 Update `docs/CURRENT_STATE.md` when implementation truth changes. Keep product intent,
 historical material, and current evidence distinct. Follow
 `docs/operations/KANBAN_WORKFLOW.md`; no task is Done without acceptance evidence.
-

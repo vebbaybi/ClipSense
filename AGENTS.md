@@ -21,4 +21,3 @@ These rules apply to every coding agent working in this repository.
 16. Never use destructive Git cleanup/reset commands or force push.
 17. Keep each capability within its owner; do not scatter a feature across arbitrary paths.
 18. Read `docs/CURRENT_STATE.md` before implementation and update it when truth changes.
-

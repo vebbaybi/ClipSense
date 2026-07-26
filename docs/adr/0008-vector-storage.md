@@ -56,4 +56,3 @@ Defer selection until semantic search requirements and benchmarks exist.
 
 ## Approval Required
 Data, processor, API, operations, and cost owners.
-

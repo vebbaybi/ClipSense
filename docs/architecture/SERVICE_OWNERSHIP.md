@@ -55,4 +55,3 @@ desktop trust boundary.
 
 No new service should be created until an existing component cannot own the
 responsibility cleanly and an ADR records the operational cost.
-

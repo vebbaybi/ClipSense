@@ -72,4 +72,3 @@ navigation to the actual routes, then test the result.
 Use the HP development machine for Sprint 1 Docker integration if it has Docker
 Engine and FFmpeg. Use the Mac later for Safari/macOS validation; no desktop code
 exists to validate during Sprint 0.
-
