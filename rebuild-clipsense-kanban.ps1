@@ -20,10 +20,20 @@
 
 param(
     [switch]$DryRun,
-    [switch]$SelfTest
+    [switch]$SelfTest,
+    [switch]$AllowLegacyTaxonomy
 )
 
 $ErrorActionPreference = "Stop"
+
+if (-not $SelfTest -and -not $AllowLegacyTaxonomy) {
+    throw @"
+This tracked script contains a legacy issue taxonomy that does not match the live
+ClipSense GitHub Project #19. It is disabled by default to prevent duplicate issue
+creation. See docs/operations/KANBAN_WORKFLOW.md. Use -AllowLegacyTaxonomy only for
+an explicitly approved recovery or migration after reviewing a dry run.
+"@
+}
 
 $ProjectTitle = "ClipSense"
 $WorkflowFieldNames = @("Workflow Status", "Status")
