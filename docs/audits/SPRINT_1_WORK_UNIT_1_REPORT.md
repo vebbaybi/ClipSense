@@ -152,9 +152,8 @@ Redis readiness degradation and recovery, SIGTERM handling, evidence collection,
 clean shutdown. It records the exact commit, ref, runner, toolchain, run ID, attempt,
 trigger, timings, image inventory, HTTP results, and service state.
 
-The workflow has been implemented but its exact-commit run evidence is pending. Until
-that run passes, all Docker-dependent criteria remain Review / QA. HP and Acer Docker
-Desktop evidence is optional supplemental Windows QA.
+The authoritative exact-commit run passed. HP and Acer Docker Desktop evidence remains
+optional supplemental Windows QA.
 
 ## 19. Kanban Updates
 
@@ -162,16 +161,18 @@ Project #19 was treated as authoritative. Issues #16, #21, #28, and #41 were
 updated for worker, route, health, and Compose work. Issues #79 through #83 were
 created for the Work Unit 1 epic, Go lifecycle, configuration inventory, local
 evidence, and runtime verification. Issue #83 now owns the GitHub Actions Docker
-Runtime Verification Gate and remains Review / QA until the authoritative run passes.
-Issue #75 remains Bugged and its unsafe workflow was not run.
+Runtime Verification Gate. Applicable Work Unit 1 cards are eligible for Done with
+the passing run attached. Issue #75 remains Bugged and its unsafe workflow was not
+run.
 
-## 20. Remaining Blockers
+## 20. Remaining Risks
 
-Docker configuration validation, clean image build, worker container import and
-stability, in-container FFmpeg, full stack health/reachability, and real signal
-shutdown evidence require a successful exact-commit GitHub Actions run. That run must
-also confirm the pinned Qdrant image supports its readiness probe. These block Work
-Unit 1 from Done and are tracked by issue #83.
+The worker image is approximately 6.48 GB and cold model caches reached approximately
+1.2 GB. Routine runs depend on external base-image and model hosts; the model cache is
+not persisted across Compose runs. Full media processing, result correctness, and
+resource limits were not tested by this boot/integration gate. GitHub also reports
+Node 20 action-runtime deprecation warnings for the repository's current major action
+versions. PR #84 remains draft and conflicting with `main`.
 
 The first authoritative run, `30405578943` at
 `bd9d1666ab0ef065d6a04dbe37062a0572bc0c20`, passed Compose configuration and
@@ -215,6 +216,28 @@ bounded five-second delay, and the gate asserts it stays running without a resta
 and resumes its blocking queue wait after Redis recovers. A new exact-commit run is
 required before Done.
 
+The sixth authoritative run, `30407483794` at
+`94f1911ec73ef4993ad90a9d81a4f0aece8968a8`, passed every source-quality,
+image-build, runtime, degradation, lifecycle, evidence, and shutdown assertion.
+Artifact `docker-runtime-94f1911ec73ef4993ad90a9d81a4f0aece8968a8`
+(artifact ID `8707270074`, retained through 2026-08-11) confirms:
+
+- API, worker, and web image IDs and sizes; build duration 397 seconds.
+- Python 3.11.15, successful `main`/`zip_safety` imports, FFmpeg 7.1.5, and
+  worker dependency connectivity.
+- Whisper `small` and sentence-transformer `all-MiniLM-L6-v2` cold-start caches
+  reaching approximately 1.2 GB; worker queue readiness in about 31 seconds after
+  container start in this run.
+- PostgreSQL, Redis, Qdrant, API, and web healthy with zero restarts.
+- HTTP 200 for live, ready, compatibility health, `/`, and all four dashboard
+  route patterns.
+- During Redis interruption: liveness 200, readiness 503, worker still running
+  with zero restarts; after recovery readiness returned 200 and the worker resumed
+  its blocking queue wait.
+- API SIGTERM exit code 0 and clean removal of all six Compose containers and the
+  network after volume/log evidence collection.
+- A complete successful job summary and commit-attributed diagnostic artifact.
+
 ## 21. Deferred Work Unit 2 Risks
 
 Predictable JWT fallback, total upload-size enforcement, authenticated browser
@@ -224,6 +247,7 @@ claim is made.
 
 ## 22. Done Recommendation
 
-**Review / QA, not Done.** Source implementation and available local validation
-are complete, but the Definition of Done requires the authoritative exact-commit
-GitHub Actions Docker runtime evidence.
+**Done.** Source implementation, available local validation, and the authoritative
+exact-commit GitHub Actions Docker runtime evidence pass. Work Unit 2 may now begin as
+a separate scoped increment; the draft PR remains unmerged and conflicting with
+`main`.

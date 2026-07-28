@@ -21,12 +21,13 @@ Updated on 2026-07-28 during Sprint 1 Work Unit 1A, which started from
   interrupt/termination handling.
 - A GitHub-hosted Ubuntu Docker build and runtime verification gate with exact commit
   attribution, bounded health/lifecycle checks, summaries, and retained diagnostics.
+- Authoritative run `30407483794` passed at
+  `94f1911ec73ef4993ad90a9d81a4f0aece8968a8`: all application images built; the
+  six-service stack became healthy; canonical health/routes, worker boot/stability,
+  Redis degradation/recovery, API SIGTERM, evidence upload, and clean shutdown passed.
 
 ## Partially Implemented Or Defective
 
-- Worker image source packaging, FFmpeg/import smoke, complete Compose startup,
-  service health, web reachability, worker stability, readiness degradation/recovery,
-  and real API signal shutdown await the authoritative GitHub Actions execution.
 - The export endpoint is protected, but the browser anchor cannot attach its token.
 - `ParseMultipartForm` does not enforce the intended total request byte limit.
 - Compose omits `JWT_SECRET`, causing the API's `dev-secret` fallback.

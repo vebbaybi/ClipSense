@@ -7,10 +7,11 @@ and produce an authenticated, reviewable, exportable result using a clean enviro
 
 ### Work Unit 1: Runtime Startup And Routing Baseline
 
-Status: **Review / QA**
+Status: **Done**
 
-Source implementation and available local validation are complete. The exact-commit
-GitHub Actions Docker runtime gate must pass before this work unit can move to Done.
+Source implementation, local validation, and the exact-commit GitHub Actions Docker
+runtime gate pass. Authoritative run `30407483794` passed at
+`94f1911ec73ef4993ad90a9d81a4f0aece8968a8`.
 
 - Worker image packages `main.py` and `zip_safety.py`, excludes local artifacts,
   installs FFmpeg, and performs compilation/import/FFmpeg build smoke checks.
