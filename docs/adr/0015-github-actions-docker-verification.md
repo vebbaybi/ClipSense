@@ -13,12 +13,12 @@ consistent routine gate tied automatically to a source commit.
 ## Decision
 
 GitHub-hosted Ubuntu runners are the authoritative Linux container build and runtime
-verification environment. `.github/workflows/docker-runtime.yml` owns orchestration,
-security, triggers, attribution, summary, and artifact retention.
+verification environment. The `docker-runtime` job in `.github/workflows/ci.yml`
+owns orchestration, security, triggers, attribution, summary, and artifact retention.
 `scripts/ci/verify-docker-runtime.sh` is the single owner of reusable Compose build
 and runtime assertions.
 
-The existing `.github/workflows/ci.yml` remains the fast source-quality workflow.
+The other jobs in `.github/workflows/ci.yml` remain the fast source-quality checks.
 Local Windows Docker Desktop runs are optional supplemental platform QA and do not
 replace the GitHub gate. Desktop application testing on Windows, macOS, and Linux is
 separate because no desktop application exists.
@@ -51,4 +51,3 @@ separate because no desktop application exists.
 Replace the runner or workflow only after another environment supplies equally
 reproducible, commit-attributed build/runtime evidence. Remove this ADR, workflow,
 and its single owned script together so no competing gate remains.
-

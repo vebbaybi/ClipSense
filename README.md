@@ -46,9 +46,9 @@ Stop the stack normally with:
 docker compose down
 ```
 
-The authoritative Sprint 1 Linux container gate is
-`.github/workflows/docker-runtime.yml`. It builds the application images, starts the
-canonical Compose stack, checks dependency and route behavior, verifies readiness
+The authoritative Sprint 1 Linux container gate is the `docker-runtime` job in
+`.github/workflows/ci.yml`. It builds the application images, starts the canonical
+Compose stack, checks dependency and route behavior, verifies readiness
 degradation/recovery and graceful termination, and retains commit-attributed
 diagnostics. Docker Desktop on the HP or Acer is optional supplemental Windows QA.
 Future desktop application testing remains a separate cross-platform concern.
