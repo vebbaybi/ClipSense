@@ -191,6 +191,13 @@ existing transitive libraries to the mutually compatible published versions
 `transformers==4.30.2` and `huggingface-hub==0.14.1`. No application capability was
 added. The failed run also retained commit-attributed diagnostics.
 
+The third authoritative run, `30405974575` at
+`b938b16509d56f1b2ec655fd919a59bc3c439095`, proved all three Dockerfile builds,
+worker compilation/imports, and FFmpeg. It then failed in image inventory because
+Buildx Bake loaded unnamed images for Compose services without explicit `image`
+fields. The CI script now applies Compose's deterministic project/service tags during
+Bake and inventories those exact tags before runtime startup.
+
 ## 21. Deferred Work Unit 2 Risks
 
 Predictable JWT fallback, total upload-size enforcement, authenticated browser

@@ -132,6 +132,9 @@ case "$mode" in
     start="$(date +%s)"
     docker buildx bake --file docker-compose.yml api worker web \
       --load \
+      --set "api.tags=${COMPOSE_PROJECT_NAME:-clipsense-ci}-api" \
+      --set "worker.tags=${COMPOSE_PROJECT_NAME:-clipsense-ci}-worker" \
+      --set "web.tags=${COMPOSE_PROJECT_NAME:-clipsense-ci}-web" \
       --set '*.cache-from=type=gha' \
       --set '*.cache-to=type=gha,mode=max' \
       --progress plain 2>&1 |
@@ -141,7 +144,7 @@ case "$mode" in
       echo "source_commit=${SOURCE_SHA:-$(git rev-parse HEAD)}"
       echo "duration_seconds=$duration"
       for service in api worker web; do
-        image_id="$(compose images -q "$service")"
+        image_id="${COMPOSE_PROJECT_NAME:-clipsense-ci}-${service}"
         docker image inspect --format \
           'service='"$service"' id={{.Id}} size_bytes={{.Size}} created={{.Created}} repo_digests={{json .RepoDigests}}' \
           "$image_id"
