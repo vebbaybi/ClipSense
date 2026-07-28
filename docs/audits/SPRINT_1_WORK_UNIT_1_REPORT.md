@@ -182,6 +182,15 @@ compatible build tool to `setuptools<81` and installs the already-declared
 requirements without PEP 517 build isolation. The failed run retained artifact
 `docker-runtime-bd9d1666ab0ef065d6a04dbe37062a0572bc0c20`.
 
+The second authoritative run, `30405742248` at
+`255feb9574f6ac3e6e4e68cc1c040a370f758937`, proved the Whisper wheel correction,
+then failed the worker import smoke because the legacy
+`sentence-transformers==2.2.2` declaration allowed incompatible current
+`transformers` and `huggingface-hub` releases. The requirements now constrain those
+existing transitive libraries to the mutually compatible published versions
+`transformers==4.30.2` and `huggingface-hub==0.14.1`. No application capability was
+added. The failed run also retained commit-attributed diagnostics.
+
 ## 21. Deferred Work Unit 2 Risks
 
 Predictable JWT fallback, total upload-size enforcement, authenticated browser
