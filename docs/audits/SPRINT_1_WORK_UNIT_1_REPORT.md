@@ -173,6 +173,15 @@ shutdown evidence require a successful exact-commit GitHub Actions run. That run
 also confirm the pinned Qdrant image supports its readiness probe. These block Work
 Unit 1 from Done and are tracked by issue #83.
 
+The first authoritative run, `30405578943` at
+`bd9d1666ab0ef065d6a04dbe37062a0572bc0c20`, passed Compose configuration and
+source-quality jobs but exposed a worker image build defect before runtime:
+`openai-whisper==20231117` imported `pkg_resources` in an isolated build environment
+whose current setuptools no longer supplied it. The worker Dockerfile now pins the
+compatible build tool to `setuptools<81` and installs the already-declared
+requirements without PEP 517 build isolation. The failed run retained artifact
+`docker-runtime-bd9d1666ab0ef065d6a04dbe37062a0572bc0c20`.
+
 ## 21. Deferred Work Unit 2 Risks
 
 Predictable JWT fallback, total upload-size enforcement, authenticated browser
