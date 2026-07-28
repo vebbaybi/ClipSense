@@ -231,7 +231,12 @@ def duration_seconds(video_path: Path) -> float:
 def main():
     initialize_runtime()
     while True:
-        item = rdb.blpop('jobs:batch', timeout=0)
+        try:
+            item = rdb.blpop('jobs:batch', timeout=0)
+        except redis.RedisError:
+            log("Redis unavailable; retrying in 5 seconds")
+            time.sleep(5)
+            continue
         if not item:
             time.sleep(1)
             continue

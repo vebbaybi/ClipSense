@@ -205,6 +205,16 @@ healthy with zero restarts. It then exposed a CI diagnostics formatting defect:
 Docker omits `.State.Health` entirely for the worker, causing a strict Go template
 lookup to fail. State recording now uses a null-safe `jq` projection.
 
+The fifth authoritative run, `30406958540` at
+`ba6ea9df1add4a2642f6d6d8df4fae9210c06901`, passed every implemented assertion,
+including images, health, routes, model boot, readiness degradation/recovery,
+SIGTERM, diagnostics, and shutdown. Artifact review then showed that the worker
+exited when Redis was intentionally interrupted, a stability criterion the script
+had checked only before degradation. The worker now retries Redis queue waits after a
+bounded five-second delay, and the gate asserts it stays running without a restart
+and resumes its blocking queue wait after Redis recovers. A new exact-commit run is
+required before Done.
+
 ## 21. Deferred Work Unit 2 Risks
 
 Predictable JWT fallback, total upload-size enforcement, authenticated browser

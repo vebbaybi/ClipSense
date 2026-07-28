@@ -225,9 +225,23 @@ case "$mode" in
     record_service_state "redis-stopped"
     request "degraded-live" "http://localhost:8080/api/health/live" "200"
     request "degraded-ready" "http://localhost:8080/api/health/ready" "503"
+    worker_running="$(docker inspect --format '{{.State.Running}}' "$worker_id")"
+    worker_restart_during_degradation="$(docker inspect --format '{{.RestartCount}}' "$worker_id")"
+    [[ "$worker_running" == "true" && "$worker_restart_before" == "$worker_restart_during_degradation" ]]
     compose start redis
     wait_for_health redis healthy 60
     request "recovered-ready" "http://localhost:8080/api/health/ready" "200"
+    worker_recovered=false
+    for attempt in {1..30}; do
+      blocked_clients="$(compose exec -T redis redis-cli --raw info clients |
+        awk -F: '/^blocked_clients:/ {gsub(/\r/, "", $2); print $2}')"
+      if [[ "${blocked_clients:-0}" -ge 1 ]]; then
+        worker_recovered=true
+        break
+      fi
+      sleep 2
+    done
+    [[ "$worker_recovered" == "true" ]]
     record_service_state "redis-recovered"
 
     api_id="$(compose ps -q api)"
@@ -254,7 +268,7 @@ case "$mode" in
     append_summary "- API: live, ready, and compatibility endpoints passed"
     append_summary "- Routes: all five canonical routes avoided 404/500"
     append_summary "- Worker: imports, FFmpeg, dependencies, and stability passed"
-    append_summary "- Redis degradation: readiness failed while liveness remained healthy, then recovered"
+    append_summary "- Redis degradation: readiness failed while liveness and worker remained healthy, then recovered"
     append_summary "- API SIGTERM: clean exit code 0"
     ;;
   diagnostics)
