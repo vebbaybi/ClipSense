@@ -142,49 +142,36 @@ git diff --check
 - Not applicable: no PowerShell file was changed.
 - Passed: Git whitespace check, exit 0.
 
-## 18. HP Validation Status
+## 18. Authoritative Docker Validation
 
-Not available on this Acer machine because Docker, Docker Compose, and FFmpeg are
-not installed. Run on the HP Docker machine:
+GitHub-hosted Ubuntu is now the authoritative Docker environment. The
+`Docker Runtime Verification` workflow validates Compose metadata, builds all three
+application images, starts the canonical six-service stack, verifies dependency
+health, API health semantics, web routes, worker imports/FFmpeg/connectivity/stability,
+Redis readiness degradation and recovery, SIGTERM handling, evidence collection, and
+clean shutdown. It records the exact commit, ref, runner, toolchain, run ID, attempt,
+trigger, timings, image inventory, HTTP results, and service state.
 
-```sh
-docker version
-docker compose version
-docker compose config
-docker compose build --no-cache
-docker compose up -d
-docker compose ps
-curl -fsS http://localhost:8080/api/health/live
-curl -fsS http://localhost:8080/api/health/ready
-curl -I http://localhost:3000/
-curl -I http://localhost:3000/dashboard
-docker compose exec worker ffmpeg -version
-docker compose logs --no-color api worker
-docker compose stop -t 20 api
-docker compose logs --no-color api
-docker compose down
-```
-
-Record timestamps, startup duration, service health, worker stability after model
-downloads, absence of `ModuleNotFoundError`, and clean API shutdown logs.
+The workflow has been implemented but its exact-commit run evidence is pending. Until
+that run passes, all Docker-dependent criteria remain Review / QA. HP and Acer Docker
+Desktop evidence is optional supplemental Windows QA.
 
 ## 19. Kanban Updates
 
 Project #19 was treated as authoritative. Issues #16, #21, #28, and #41 were
 updated for worker, route, health, and Compose work. Issues #79 through #83 were
 created for the Work Unit 1 epic, Go lifecycle, configuration inventory, local
-evidence, and HP verification. Active source cards entered In progress; HP
-verification remained Ready / Sprint. Final evidence and Review / QA transitions
-are recorded on the cards. Issue #75 remains Bugged and its unsafe workflow was
-not run.
+evidence, and runtime verification. Issue #83 now owns the GitHub Actions Docker
+Runtime Verification Gate and remains Review / QA until the authoritative run passes.
+Issue #75 remains Bugged and its unsafe workflow was not run.
 
 ## 20. Remaining Blockers
 
 Docker configuration validation, clean image build, worker container import and
 stability, in-container FFmpeg, full stack health/reachability, and real signal
-shutdown evidence require the HP Docker machine. A Docker run must also confirm
-the pinned Qdrant image includes the shell used by its readiness probe. These
-block Work Unit 1 from Done and are tracked by issue #83.
+shutdown evidence require a successful exact-commit GitHub Actions run. That run must
+also confirm the pinned Qdrant image supports its readiness probe. These block Work
+Unit 1 from Done and are tracked by issue #83.
 
 ## 21. Deferred Work Unit 2 Risks
 
@@ -196,4 +183,5 @@ claim is made.
 ## 22. Done Recommendation
 
 **Review / QA, not Done.** Source implementation and available local validation
-are complete, but the Definition of Done requires HP Docker and runtime evidence.
+are complete, but the Definition of Done requires the authoritative exact-commit
+GitHub Actions Docker runtime evidence.

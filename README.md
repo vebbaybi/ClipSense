@@ -46,16 +46,23 @@ Stop the stack normally with:
 docker compose down
 ```
 
+The authoritative Sprint 1 Linux container gate is
+`.github/workflows/docker-runtime.yml`. It builds the application images, starts the
+canonical Compose stack, checks dependency and route behavior, verifies readiness
+degradation/recovery and graceful termination, and retains commit-attributed
+diagnostics. Docker Desktop on the HP or Acer is optional supplemental Windows QA.
+Future desktop application testing remains a separate cross-platform concern.
+
 The current Compose defaults are for local development only. In particular,
 production-sensitive secret and port hardening remains Sprint 1 Work Unit 2 work.
 
 ## Current Limitations
 
-The Docker MVP is not presently demonstrated end to end. The worker image omits a
-required source file, dashboard links do not match the physical App Router URLs,
-authenticated CSV export is broken, the upload cap is ineffective, and Compose does
-not provide a secure JWT secret. These are planned for Sprint 1, not silently fixed
-in the Sprint 0 foundation.
+The Docker MVP is not yet demonstrated end to end until the authoritative GitHub
+Actions runtime gate passes. Full media processing and cold model acquisition are
+outside that boot/integration gate and may require a future manual or scheduled smoke.
+Authenticated CSV export is broken, the upload cap is ineffective, and Compose does
+not provide a secure JWT secret; those remain Work Unit 2 concerns.
 
 ## Inspect And Validate
 

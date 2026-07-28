@@ -9,8 +9,8 @@ and produce an authenticated, reviewable, exportable result using a clean enviro
 
 Status: **Review / QA**
 
-Source implementation and available local validation are complete. HP Docker
-verification remains required before this work unit can move to Done.
+Source implementation and available local validation are complete. The exact-commit
+GitHub Actions Docker runtime gate must pass before this work unit can move to Done.
 
 - Worker image packages `main.py` and `zip_safety.py`, excludes local artifacts,
   installs FFmpeg, and performs compilation/import/FFmpeg build smoke checks.
@@ -20,13 +20,15 @@ verification remains required before this work unit can move to Done.
 - API liveness, readiness, bounded dependency checks, explicit server timeouts,
   signal handling, and graceful shutdown logic are implemented and unit tested.
 - Compose health-gates Postgres, Redis, Qdrant, API, worker, and web startup.
-- HP validation is tracked separately and remains Ready / Sprint.
+- GitHub-hosted Linux is the authoritative Docker verification environment. Windows
+  Docker Desktop validation is optional supplemental QA.
 
 Evidence: `docs/audits/SPRINT_1_WORK_UNIT_1_REPORT.md`.
 
 ### Work Unit 2: Security And Upload Hardening
 
-Status: **Ready / Sprint**, but should begin only after Work Unit 1 HP validation.
+Status: **Ready / Sprint**, but should begin only after the Work Unit 1 GitHub
+Actions runtime gate passes.
 
 Known inputs include JWT secret enforcement, upload hard limits, authenticated
 export repair, safe API error responses, and the other explicitly approved Work
@@ -53,6 +55,6 @@ Unit 2 items. Work Unit 1 does not implement them.
 - Do not introduce desktop, link/direct-video intake, advanced AI, collaboration,
   editor integrations, Kubernetes, billing, or Temporal.
 - Approve the migration baseline before changing schema.
-- Use the HP machine for Docker/FFmpeg integration. Use the current Acer machine for
-  focused source/tests. Mac browser validation is useful after routes and framework
-  upgrade, but is not a substitute for the Docker smoke test.
+- Use GitHub-hosted Linux for authoritative Docker/FFmpeg integration. The HP and Acer
+  may provide supplemental Windows Docker evidence. Mac browser validation is useful
+  after routes and framework upgrade, but is not a substitute for the Docker gate.

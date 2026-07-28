@@ -1,6 +1,6 @@
 # ClipSense Current State
 
-Updated on 2026-07-26 during Sprint 1 Work Unit 1, which started from
+Updated on 2026-07-28 during Sprint 1 Work Unit 1A, which started from
 `49596612fae8cc1bc20675b722efdba107647f40`.
 
 ## Implemented
@@ -19,13 +19,14 @@ Updated on 2026-07-26 during Sprint 1 Work Unit 1, which started from
   settings routes beneath it.
 - An explicit Go HTTP server with bounded request timeouts and graceful
   interrupt/termination handling.
+- A GitHub-hosted Ubuntu Docker build and runtime verification gate with exact commit
+  attribution, bounded health/lifecycle checks, summaries, and retained diagnostics.
 
 ## Partially Implemented Or Defective
 
-- Worker image source packaging and its FFmpeg/import build smoke check have not
-  yet been executed on the HP Docker machine.
-- Complete Compose startup, service health, web reachability, worker stability,
-  and real API signal shutdown remain HP validation tasks.
+- Worker image source packaging, FFmpeg/import smoke, complete Compose startup,
+  service health, web reachability, worker stability, readiness degradation/recovery,
+  and real API signal shutdown await the authoritative GitHub Actions execution.
 - The export endpoint is protected, but the browser anchor cannot attach its token.
 - `ParseMultipartForm` does not enforce the intended total request byte limit.
 - Compose omits `JWT_SECRET`, causing the API's `dev-secret` fallback.
@@ -97,6 +98,8 @@ a Work Unit 2 blocker and this stack is not production-secure.
 - No root `.env` or `apps/web/.env.local`.
 - Workspace is under OneDrive.
 
-Use the HP development machine for Sprint 1 Docker integration if it has Docker
-Engine and FFmpeg. Use the Mac later for Safari/macOS validation; no desktop code
-exists to validate during Sprint 0.
+GitHub Actions is authoritative for Linux container verification. Docker Desktop on
+the HP or Acer is optional supplemental Windows QA, not a mandatory completion gate.
+Windows/macOS/Linux desktop application testing remains separate because no desktop
+code exists. Full media processing and cold model downloads may require a future
+manual or scheduled smoke workflow.
