@@ -22,9 +22,9 @@ record_service_state() {
     for service in postgres redis qdrant api worker web; do
       container_id="$(compose ps -q "$service" 2>/dev/null || true)"
       if [[ -n "$container_id" ]]; then
-        docker inspect --format \
-          'service={{index .Config.Labels "com.docker.compose.service"}} id={{.Id}} status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}} restart_count={{.RestartCount}} exit_code={{.State.ExitCode}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' \
-          "$container_id"
+        docker inspect "$container_id" |
+          jq -r '.[0] |
+            "service=\(.Config.Labels["com.docker.compose.service"]) id=\(.Id) status=\(.State.Status) health=\(.State.Health.Status // "none") restart_count=\(.RestartCount) exit_code=\(.State.ExitCode) started=\(.State.StartedAt) finished=\(.State.FinishedAt)"'
       fi
     done
   } | tee -a "$evidence_dir/service-transitions.txt"

@@ -198,6 +198,13 @@ Buildx Bake loaded unnamed images for Compose services without explicit `image`
 fields. The CI script now applies Compose's deterministic project/service tags during
 Bake and inventories those exact tags before runtime startup.
 
+The fourth authoritative run, `30406447527` at
+`5891ccbd37551e7b0ac73858485eb519197a29d0`, built and inventoried all three
+images, started the real stack, and confirmed PostgreSQL, Redis, Qdrant, and API
+healthy with zero restarts. It then exposed a CI diagnostics formatting defect:
+Docker omits `.State.Health` entirely for the worker, causing a strict Go template
+lookup to fail. State recording now uses a null-safe `jq` projection.
+
 ## 21. Deferred Work Unit 2 Risks
 
 Predictable JWT fallback, total upload-size enforcement, authenticated browser
