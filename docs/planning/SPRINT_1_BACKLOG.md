@@ -40,6 +40,15 @@ User authorization covers authentication and upload hardening only. See
 [Work Unit 2 evidence](../audits/WORK_UNIT_2_AUTH_UPLOAD.md) and its candidate PR
 for exact tested commit, CI/Docker runs, commands and final gate decisions.
 
+Intermediate candidate `156c6ea2d04d9c50a6b841bc3cce9c305049387c` passed all
+five jobs in [run 35649979087](https://github.com/vebbaybi/ClipSense/actions/runs/35649979087),
+including the preserved runtime baseline and new HTTP/media boundary checks.
+Final follow-up adds ambiguous database-insert cleanup and an image-level missing-key
+check. Its exact-SHA result and acceptance decision are recorded on
+[PR #85](https://github.com/vebbaybi/ClipSense/pull/85); the intermediate run does not
+certify that follow-up. CS-015 still needs shared UI limit presentation; CS-030
+still includes production database/DSN guardrails. Neither parent story is closed.
+
 Implemented scope: explicit signing-key configuration, strict credentials/tokens,
 bounded auth attempts, request/archive/media validation, scoped cleanup and safe
 auth/upload errors. Authenticated export, cross-user/CORS acceptance, processing

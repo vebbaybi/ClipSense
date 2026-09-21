@@ -120,13 +120,18 @@ func TestArchivePathsAndResources(t *testing.T) {
 }
 
 func TestUploadHandoffCleanup(t *testing.T) {
-	for _, stage := range []string{"database-failure", "queue-failure", "claimed", "success"} {
+	for _, stage := range []string{"database-failure", "database-cleanup-failure", "queue-failure", "claimed", "success"} {
 		t.Run(stage, func(t *testing.T) {
 			mock, server := securityTestSetup(t)
 			root := t.TempDir()
 			t.Setenv("UPLOAD_DIR", root)
-			if stage == "database-failure" {
+			if strings.HasPrefix(stage, "database-") {
 				mock.ExpectExec("INSERT INTO batches").WillReturnError(errors.New("private SQL"))
+				if stage == "database-cleanup-failure" {
+					mock.ExpectExec("DELETE FROM batches").WillReturnError(errors.New("private cleanup failure"))
+				} else {
+					mock.ExpectExec("DELETE FROM batches").WillReturnResult(sqlmock.NewResult(0, 1))
+				}
 			} else {
 				mock.ExpectExec("INSERT INTO batches").WillReturnResult(sqlmock.NewResult(0, 1))
 			}
@@ -140,7 +145,7 @@ func TestUploadHandoffCleanup(t *testing.T) {
 			}
 			rec := uploadRequest(t, zipFixture(t, []string{"clip.mp4"}), 1)
 			entries, _ := os.ReadDir(root)
-			if stage == "success" || stage == "claimed" {
+			if stage == "success" || stage == "claimed" || stage == "database-cleanup-failure" {
 				if len(entries) != 1 {
 					t.Fatal("lost owned ZIP")
 				}

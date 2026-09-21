@@ -10,7 +10,7 @@ is now in Review / QA on the auth/upload candidate branch; see
 
 ## Implemented
 
-- Next.js 14 App Router web source with login/register, batch list, ZIP submission,
+- Next.js 15.5.24 App Router web source with login/register, batch list, ZIP submission,
   batch detail, basic storyline display, and static settings.
 - Go/chi API with separate liveness and dependency readiness, custom JWT
   registration/login, protected batch routes,

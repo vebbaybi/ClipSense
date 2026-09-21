@@ -94,6 +94,10 @@ archive/resource/cleanup controls.
 - Failed HTTP validation removes its generated ZIP; no batch is inserted. Failed
   worker validation removes its own extraction workspace and ZIP, then existing
   failure handling marks the batch failed. Successful media retention is unchanged.
+- A failed/ambiguous database insert attempts a bounded compensating delete of the
+  unique pending row before returning; the not-yet-queued ZIP is then removed.
+  Failed DB compensation retains the ZIP under the storage quota and is explicitly
+  logged with batch ID for operator reconciliation, bounding repeated failures too.
 - Queue failure atomically marks a still-pending row failed and clears its path
   before removing the ZIP. Worker claims only matching pending ID/path rows. If
   already claimed, worker owns the ZIP. If DB reconciliation is unavailable, the
@@ -151,6 +155,16 @@ Initial npm audit: 14 vulnerabilities (one critical). Initial reachable Go scan:
   as not called. This is reachability qualification, not absence of all module risk.
 
 ## Acceptance Boundary
+
+Intermediate candidate `156c6ea2d04d9c50a6b841bc3cce9c305049387c` passed all five
+jobs in [run 35649979087](https://github.com/vebbaybi/ClipSense/actions/runs/35649979087),
+including full runtime and HTTP/media boundary checks. Initial run `35649859355`
+failed Compose syntax validation; the environment-list correction resolved it.
+The final follow-up adds database-insert compensation and production missing-key
+image verification. [PR #85](https://github.com/vebbaybi/ClipSense/pull/85) records
+the exact final SHA/run and gate decisions without a self-referential commit hash.
+CS-015 UI limit presentation and CS-030 production database/DSN guardrails remain
+outside this accepted subset. No broader story is automatically closed.
 
 Implementation and local checks are not final acceptance without green exact-SHA
 hosted evidence. The candidate PR records final Gate 2/Gate 3 and runtime decisions.

@@ -169,6 +169,12 @@ func createBatch(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	_, err = db.ExecContext(ctx, `INSERT INTO batches (id,user_id,name,status,zip_path,clip_count,duration_seconds,created_at,updated_at) VALUES ($1,$2,$3,'pending',$4,0,0,$5,$6)`, id, currentUserID(r), name, dest, now, now)
 	if err != nil {
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cleanupCancel()
+		if _, cleanupErr := db.ExecContext(cleanupCtx, `DELETE FROM batches WHERE id=$1 AND status='pending'`, id); cleanupErr != nil {
+			transferred = true // Retain under the quota until the ambiguous row is reconciled.
+			log.Printf("event=upload_record_cleanup_failed batch_id=%s", id)
+		}
 		publicError(w, 503, "upload_unavailable")
 		return
 	}
