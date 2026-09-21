@@ -7,11 +7,13 @@ and produce an authenticated, reviewable, exportable result using a clean enviro
 
 ### Work Unit 1: Runtime Startup And Routing Baseline
 
-Status: **Done**
+Status: **Review / QA - Gate 1 integrated acceptance pending**
 
-Source implementation, local validation, and the exact-commit GitHub Actions Docker
-runtime gate pass. Authoritative run `30407483794` passed at
-`94f1911ec73ef4993ad90a9d81a4f0aece8968a8`.
+Historical runtime run `30407483794` passed at
+`94f1911ec73ef4993ad90a9d81a4f0aece8968a8`. It does not certify the current
+integration with main. Gate 1 requires fresh CI and Docker evidence on the integrated
+commit, including API restart after graceful shutdown. See
+`docs/audits/GATE_1_RUNTIME_ACCEPTANCE.md` for conflict decisions and results.
 
 - Worker image packages `main.py` and `zip_safety.py`, excludes local artifacts,
   installs FFmpeg, and performs compilation/import/FFmpeg build smoke checks.
@@ -28,8 +30,8 @@ Evidence: `docs/audits/SPRINT_1_WORK_UNIT_1_REPORT.md`.
 
 ### Work Unit 2: Security And Upload Hardening
 
-Status: **Ready / Sprint**, but should begin only after the Work Unit 1 GitHub
-Actions runtime gate passes.
+Status: **Not started; waiting for Gate 1 acceptance**. No security or upload
+hardening is authorized by the current runtime acceptance task.
 
 Known inputs include JWT secret enforcement, upload hard limits, authenticated
 export repair, safe API error responses, and the other explicitly approved Work

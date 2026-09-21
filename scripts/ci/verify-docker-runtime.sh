@@ -258,6 +258,12 @@ case "$mode" in
     [[ "$api_running" == "false" && "$api_exit" == "0" ]]
     record_service_state "api-graceful-termination"
 
+    compose start api
+    wait_for_health api healthy 60
+    request "restarted-live" "http://localhost:8080/api/health/live" "200"
+    request "restarted-ready" "http://localhost:8080/api/health/ready" "200"
+    record_service_state "api-restarted"
+
     duration="$(($(date +%s)-runtime_start))"
     append_summary ""
     append_summary "## Runtime integration"
@@ -270,6 +276,7 @@ case "$mode" in
     append_summary "- Worker: imports, FFmpeg, dependencies, and stability passed"
     append_summary "- Redis degradation: readiness failed while liveness and worker remained healthy, then recovered"
     append_summary "- API SIGTERM: clean exit code 0"
+    append_summary "- API restart: healthy with live and ready endpoints passing"
     ;;
   diagnostics)
     collect_diagnostics
