@@ -52,14 +52,19 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21.x"
+          go-version-file: apps/api/go.mod
           cache-dependency-path: apps/api/go.mod
 
       - name: Download dependencies
         run: go mod download
 
       - name: Test API
-        run: go test ./...
+        run: |
+          go test -count=1 ./...
+          go vet ./...
+
+      - name: Scan reachable Go vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
 
   worker:
     name: Python Worker
@@ -105,6 +110,19 @@ jobs:
       - name: Build web app
         run: npm run build
 
+      - name: Record remaining web dependency risk
+        shell: bash
+        run: |
+          npm audit --json > npm-audit.json || true
+          node -e 'const a=require("./npm-audit.json"); if (!a.metadata) process.exit(1); console.log(a.metadata.vulnerabilities)'
+
+      - name: Upload web audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-audit-${{ github.sha }}
+          path: apps/web/npm-audit.json
+          retention-days: 14
+
   compose:
     name: Docker Compose Config
     runs-on: ubuntu-latest
@@ -123,12 +141,21 @@ jobs:
       COMPOSE_PROJECT_NAME: clipsense-ci
       EVIDENCE_DIR: artifacts/docker-runtime
       SOURCE_SHA: ${{ github.sha }}
+      APP_ENV: test
+      MAX_UPLOAD_REQUEST_BYTES: "1048576"
     steps:
       - name: Checkout exact source
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Configure ephemeral test signing key
+        shell: bash
+        run: |
+          secret="$(openssl rand -base64 32)"
+          echo "::add-mask::$secret"
+          echo "JWT_SECRET=$secret" >> "$GITHUB_ENV"
 
       - name: Record runner and source attribution
         shell: bash
@@ -167,6 +194,13 @@ jobs:
       - name: Verify full runtime
         shell: bash
         run: bash scripts/ci/verify-docker-runtime.sh runtime
+
+      - name: Verify authentication and upload boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/ci/verify-security-boundaries.py | tee "$EVIDENCE_DIR/security-boundaries.txt"
+          docker compose exec -T worker python - < scripts/ci/verify-media-boundary.py | tee "$EVIDENCE_DIR/media-boundary.txt"
 
       - name: Collect final diagnostics
         if: always()

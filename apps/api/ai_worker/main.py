@@ -4,7 +4,6 @@ import sqlite3
 import subprocess
 import uuid
 import json
-import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,7 +15,7 @@ import whisper
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
-from zip_safety import extract_zip, media_files
+from zip_safety import prepare_upload
 
 DB_DRIVER = os.getenv('DB_DRIVER', 'postgres')
 DB_PATH = Path(os.getenv('DB_PATH', 'data/clipsense.db'))
@@ -142,18 +141,20 @@ def upsert_embeddings(clip_rows, embeddings):
 
 
 def process_batch(batch_id: str, name: str, zip_path: Path):
+    if str(uuid.UUID(batch_id)) != batch_id:
+        raise ValueError('invalid batch id')
+    if zip_path.is_symlink() or zip_path.resolve().parent != UPLOAD_DIR.resolve():
+        raise ValueError('invalid upload location')
     conn = connect_db()
     try:
-        update_status(conn, batch_id, 'processing')
+        cur = conn.cursor()
+        cur.execute(f"UPDATE batches SET status='processing', updated_at={current_timestamp()} WHERE id={ph(1)} AND zip_path={ph(2)} AND status='pending'", (batch_id, str(zip_path)))
+        claimed = cur.rowcount == 1
+        conn.commit()
+        if not claimed:
+            return
         workdir = PROCESS_DIR / batch_id
-        if workdir.exists():
-            shutil.rmtree(workdir)
-        workdir.mkdir(parents=True, exist_ok=True)
-        extract_zip(zip_path, workdir, logger=log)
-
-        videos = list(media_files(workdir))
-        if not videos:
-            raise ValueError("zip contains no supported video files")
+        videos = prepare_upload(zip_path, workdir, log)
 
         clip_rows = []
         texts = []

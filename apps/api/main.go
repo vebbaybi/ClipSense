@@ -7,25 +7,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
-	"mime/multipart"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var db *sql.DB
@@ -96,9 +90,12 @@ func main() {
 }
 
 func run() error {
-	jwtSecret = []byte(getenv("JWT_SECRET", "dev-secret"))
-
 	var err error
+	security, err = loadSecurityConfig()
+	if err != nil {
+		return err
+	}
+	jwtSecret = security.secret
 	db, err = openDB()
 	if err != nil {
 		return fmt.Errorf("open db: %w", err)
@@ -139,16 +136,14 @@ func run() error {
 func newRouter(checks dependencyChecks) http.Handler {
 	r := chi.NewRouter()
 	r.Use(localDevCORSMiddleware)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
 	r.Route("/api", func(api chi.Router) {
 		api.Get("/health", readinessHandler(checks))
 		api.Get("/health/live", liveness)
 		api.Get("/health/ready", readinessHandler(checks))
-		api.Post("/auth/register", register)
-		api.Post("/auth/login", login)
+		api.With(authAttemptLimit).Post("/auth/register", register)
+		api.With(authAttemptLimit).Post("/auth/login", login)
 		api.Group(func(p chi.Router) {
 			p.Use(authMiddleware)
 			p.Get("/batches", listBatches)
@@ -277,72 +272,6 @@ func readinessHandler(dependencies dependencyChecks) http.HandlerFunc {
 	}
 }
 
-// Auth
-func register(w http.ResponseWriter, r *http.Request) {
-	var body struct{ Email, Password string }
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		httpError(w, err)
-		return
-	}
-	hash, _ := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
-	id := uuid.New().String()
-	now := time.Now().UTC()
-	_, err := db.Exec(`INSERT INTO users (id,email,password_hash,created_at) VALUES ($1,$2,$3,$4)`, id, body.Email, string(hash), now)
-	if err != nil {
-		httpError(w, err)
-		return
-	}
-	token, _ := issueToken(id)
-	writeJSON(w, map[string]string{"token": token})
-}
-
-func login(w http.ResponseWriter, r *http.Request) {
-	var body struct{ Email, Password string }
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		httpError(w, err)
-		return
-	}
-	var id, hash string
-	err := db.QueryRow(`SELECT id, password_hash FROM users WHERE email = $1`, body.Email).Scan(&id, &hash)
-	if err != nil || bcrypt.CompareHashAndPassword([]byte(hash), []byte(body.Password)) != nil {
-		httpError(w, fmt.Errorf("invalid credentials"))
-		return
-	}
-	token, _ := issueToken(id)
-	writeJSON(w, map[string]string{"token": token})
-}
-
-func issueToken(userID string) (string, error) {
-	claims := jwt.MapClaims{"sub": userID, "exp": time.Now().Add(24 * time.Hour).Unix(), "iat": time.Now().Unix()}
-	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(jwtSecret)
-}
-
-func authMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth := r.Header.Get("Authorization")
-		if auth == "" {
-			http.Error(w, "missing auth", http.StatusUnauthorized)
-			return
-		}
-		var tokenStr string
-		fmt.Sscanf(auth, "Bearer %s", &tokenStr)
-		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("invalid method")
-			}
-			return jwtSecret, nil
-		})
-		if err != nil || !token.Valid {
-			http.Error(w, "invalid token", http.StatusUnauthorized)
-			return
-		}
-		claims := token.Claims.(jwt.MapClaims)
-		uid, _ := claims["sub"].(string)
-		ctx := context.WithValue(r.Context(), userKey, uid)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
 func currentUserID(r *http.Request) string {
 	if v := r.Context().Value(userKey); v != nil {
 		if s, ok := v.(string); ok {
@@ -441,66 +370,6 @@ func listBatches(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]any{"batches": batches})
 }
 
-func createBatch(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(200 << 20); err != nil {
-		httpError(w, err)
-		return
-	}
-	file, header, err := r.FormFile("file")
-	if err != nil {
-		httpError(w, fmt.Errorf("missing file: %w", err))
-		return
-	}
-	defer file.Close()
-	name := r.FormValue("name")
-	if name == "" {
-		name = header.Filename
-	}
-	id := uuid.New().String()
-	now := time.Now().UTC()
-	uid := currentUserID(r)
-
-	uploads := getenv("UPLOAD_DIR", "data/uploads")
-	if err := os.MkdirAll(uploads, 0o755); err != nil {
-		httpError(w, err)
-		return
-	}
-	destPath := filepath.Join(uploads, fmt.Sprintf("%s.zip", id))
-	out, err := os.Create(destPath)
-	if err != nil {
-		httpError(w, err)
-		return
-	}
-	if _, err := ioCopy(out, file); err != nil {
-		httpError(w, err)
-		return
-	}
-	out.Close()
-
-	_, err = db.Exec(`INSERT INTO batches (id, user_id, name, status, zip_path, clip_count, duration_seconds, created_at, updated_at) VALUES ($1,$2,$3,'pending',$4,0,0,$5,$6)`,
-		id, uid, name, destPath, now, now)
-	if err != nil {
-		httpError(w, err)
-		return
-	}
-
-	job := map[string]string{"id": id, "name": name, "zip_path": destPath}
-	payload, err := json.Marshal(job)
-	if err != nil {
-		httpError(w, err)
-		return
-	}
-	enqueueCtx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-	if err := rdb.RPush(enqueueCtx, "jobs:batch", payload).Err(); err != nil {
-		_, _ = db.Exec(`UPDATE batches SET status='failed', updated_at=CURRENT_TIMESTAMP WHERE id=$1`, id)
-		httpError(w, fmt.Errorf("enqueue batch job: %w", err))
-		return
-	}
-
-	writeJSON(w, map[string]any{"batch": Batch{ID: id, UserID: uid, Name: name, Status: "pending", ZipPath: destPath, CreatedAt: now, UpdatedAt: now}})
-}
-
 func getBatch(w http.ResponseWriter, r *http.Request) {
 	uid := currentUserID(r)
 	id := chi.URLParam(r, "id")
@@ -562,7 +431,6 @@ func getenv(key, def string) string {
 	}
 	return def
 }
-func ioCopy(dst *os.File, src multipart.File) (int64, error) { return io.Copy(dst, src) }
 func redisOpts(url string) *redis.Options {
 	opt, err := redis.ParseURL(url)
 	if err != nil {

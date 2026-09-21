@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# Runtime smoke uses explicitly opted-in development auth, never a production fallback.
+export APP_ENV="${APP_ENV:-development}"
+
 mode="${1:-}"
 evidence_dir="${EVIDENCE_DIR:-artifacts/docker-runtime}"
 summary_file="$evidence_dir/run-summary.md"
