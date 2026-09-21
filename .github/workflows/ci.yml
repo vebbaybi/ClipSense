@@ -4,7 +4,39 @@ on:
   push:
     branches:
       - main
+    paths:
+      - ".github/workflows/**"
+      - "docker-compose.yml"
+      - "**/Dockerfile"
+      - "**/.dockerignore"
+      - "apps/api/**"
+      - "apps/web/**"
+      - "scripts/ci/**"
+      - ".env.example"
+      - "docs/adr/0015-github-actions-docker-verification.md"
+      - "docs/audits/SPRINT_1_WORK_UNIT_1_REPORT.md"
   pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/**"
+      - "docker-compose.yml"
+      - "**/Dockerfile"
+      - "**/.dockerignore"
+      - "apps/api/**"
+      - "apps/web/**"
+      - "scripts/ci/**"
+      - ".env.example"
+      - "docs/adr/0015-github-actions-docker-verification.md"
+      - "docs/audits/SPRINT_1_WORK_UNIT_1_REPORT.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   api:
@@ -82,3 +114,83 @@ jobs:
 
       - name: Validate compose file
         run: docker compose config
+
+  docker-runtime:
+    name: Build and verify Compose runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      COMPOSE_PROJECT_NAME: clipsense-ci
+      EVIDENCE_DIR: artifacts/docker-runtime
+      SOURCE_SHA: ${{ github.sha }}
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Record runner and source attribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$EVIDENCE_DIR"
+          {
+            echo "# Docker runtime verification"
+            echo
+            echo "- Runner OS: $RUNNER_OS"
+            echo "- Runner architecture: $RUNNER_ARCH"
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- Git reference: \`$GITHUB_REF\`"
+            echo "- Workflow run: \`$GITHUB_RUN_ID\`"
+            echo "- Attempt: \`$GITHUB_RUN_ATTEMPT\`"
+            echo "- Trigger: \`$GITHUB_EVENT_NAME\`"
+            echo "- Started (UTC): \`$(date -u +%FT%TZ)\`"
+            echo
+            echo "## Toolchain"
+            echo
+            echo '```text'
+            docker version
+            docker compose version
+            docker buildx version
+            echo '```'
+          } | tee "$EVIDENCE_DIR/run-summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Validate resolved Compose configuration
+        shell: bash
+        run: bash scripts/ci/verify-docker-runtime.sh config
+
+      - name: Build application images
+        shell: bash
+        run: bash scripts/ci/verify-docker-runtime.sh build
+
+      - name: Verify full runtime
+        shell: bash
+        run: bash scripts/ci/verify-docker-runtime.sh runtime
+
+      - name: Collect final diagnostics
+        if: always()
+        shell: bash
+        run: bash scripts/ci/verify-docker-runtime.sh diagnostics
+
+      - name: Publish final summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo
+            echo "## Completion"
+            echo
+            echo "- Result: \`${{ job.status }}\`"
+            echo "- Completed (UTC): \`$(date -u +%FT%TZ)\`"
+            echo "- Evidence artifact: \`docker-runtime-${GITHUB_SHA}\`"
+          } | tee -a "$EVIDENCE_DIR/run-summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-runtime-${{ github.sha }}
+          path: artifacts/docker-runtime
+          if-no-files-found: error
+          retention-days: 14

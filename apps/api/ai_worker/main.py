@@ -31,14 +31,22 @@ QDRANT_COLLECTION = os.getenv('QDRANT_COLLECTION', 'clipsense_clips')
 
 PROCESS_DIR.mkdir(parents=True, exist_ok=True)
 
-model = whisper.load_model(MODEL_NAME)
-embedder = SentenceTransformer('all-MiniLM-L6-v2')
-rdb = redis.from_url(REDIS_URL)
-qclient = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+model = None
+embedder = None
+rdb = None
+qclient = None
 
 
 def log(msg: str) -> None:
     print(f"[worker] {msg}")
+
+
+def initialize_runtime():
+    global model, embedder, rdb, qclient
+    model = whisper.load_model(MODEL_NAME)
+    embedder = SentenceTransformer('all-MiniLM-L6-v2')
+    rdb = redis.from_url(REDIS_URL)
+    qclient = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
 
 
 def connect_db():
@@ -221,8 +229,14 @@ def duration_seconds(video_path: Path) -> float:
 
 
 def main():
+    initialize_runtime()
     while True:
-        item = rdb.blpop('jobs:batch', timeout=0)
+        try:
+            item = rdb.blpop('jobs:batch', timeout=0)
+        except redis.RedisError:
+            log("Redis unavailable; retrying in 5 seconds")
+            time.sleep(5)
+            continue
         if not item:
             time.sleep(1)
             continue

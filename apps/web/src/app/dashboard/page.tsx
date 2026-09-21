@@ -17,21 +17,22 @@ type Batch = {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { token } = useAuthToken()
+  const { token, ready } = useAuthToken()
   const [batches, setBatches] = useState<Batch[]>([])
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!token) return
+    if (!ready || !token) return
     api<{ batches: Batch[] }>('/api/batches', { method: 'GET' }, token)
       .then(res => setBatches(res.batches))
       .catch(e => setError(e.message || 'Failed to load'))
-  }, [token])
+  }, [ready, token])
 
-  if (!token) {
-    router.replace('/?login=1')
-    return null
-  }
+  useEffect(() => {
+    if (ready && !token) router.replace('/?login=1')
+  }, [ready, router, token])
+
+  if (!ready || !token) return null
 
   return (
     <div className="space-y-6">

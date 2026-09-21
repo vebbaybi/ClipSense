@@ -1,0 +1,1166 @@
+# ============================================================
+# ClipSense Kanban Board Rebuild - CLEAN VERSION
+# ============================================================
+# Run inside the ClipSense repo.
+#
+# This script:
+# - Detects the repo automatically.
+# - Finds the existing GitHub Project named ClipSense.
+# - Removes PROJECT CARDS only.
+# - Does NOT delete issues.
+# - Does NOT close issues.
+# - Does NOT reopen closed issues.
+# - Does NOT create Rank.
+# - Reuses OPEN issues by exact title.
+# - Creates missing issues.
+# - Adds issues to project.
+# - Sets Status.
+# - Sets Priority if the Priority field exists.
+# ============================================================
+
+$ErrorActionPreference = "Stop"
+
+$ProjectTitle = "ClipSense"
+
+# ------------------------------------------------------------
+# Detect repo and project owner
+# ------------------------------------------------------------
+
+gh auth status | Out-Null
+
+$Repo = gh repo view --json nameWithOwner -q ".nameWithOwner"
+$ProjectOwner = gh repo view --json owner -q ".owner.login"
+
+Write-Host "Repo: $Repo" -ForegroundColor Cyan
+Write-Host "Project owner: $ProjectOwner" -ForegroundColor Cyan
+Write-Host "Project title: $ProjectTitle" -ForegroundColor Cyan
+
+# ------------------------------------------------------------
+# Find project
+# ------------------------------------------------------------
+
+$Projects = gh project list --owner $ProjectOwner --format json | ConvertFrom-Json
+$Project = @($Projects.projects) | Where-Object { $_.title -eq $ProjectTitle } | Select-Object -First 1
+
+if (-not $Project) {
+  throw "Project '$ProjectTitle' not found under '$ProjectOwner'."
+}
+
+$ProjectNumber = $Project.number
+$ProjectView = gh project view $ProjectNumber --owner $ProjectOwner --format json | ConvertFrom-Json
+$ProjectId = $ProjectView.id
+
+Write-Host "Found project: $ProjectTitle #$ProjectNumber" -ForegroundColor Green
+
+# ------------------------------------------------------------
+# Fields
+# ------------------------------------------------------------
+
+$Fields = gh project field-list $ProjectNumber --owner $ProjectOwner --format json | ConvertFrom-Json
+
+$StatusField = @($Fields.fields) | Where-Object { $_.name -eq "Status" } | Select-Object -First 1
+if (-not $StatusField) {
+  throw "Missing project field: Status"
+}
+
+$StatusFieldId = $StatusField.id
+
+function Get-StatusOptionId {
+  param(
+    [string[]]$Names,
+    [bool]$Required = $true
+  )
+
+  foreach ($Name in $Names) {
+    $Option = @($StatusField.options) | Where-Object { $_.name -eq $Name } | Select-Object -First 1
+    if ($Option) {
+      return $Option.id
+    }
+  }
+
+  if ($Required) {
+    throw "Missing Status option. Tried: $($Names -join ', ')"
+  }
+
+  return $null
+}
+
+$StatusOptions = @{
+  "In Progress" = Get-StatusOptionId @("In Progress", "In progress")
+  "Ready"       = Get-StatusOptionId @("Ready")
+  "Backlog"     = Get-StatusOptionId @("Backlog", "Product Backlog")
+  "Icebox"      = Get-StatusOptionId @("Icebox")
+
+  # Optional because reset starts empty and this script does not place cards here
+  "Review"      = Get-StatusOptionId @("Review", "In Review", "In review") $false
+  "Bugged"     = Get-StatusOptionId @("Bugged") $false
+  "Done"        = Get-StatusOptionId @("Done") $false
+}
+
+$PriorityField = @($Fields.fields) | Where-Object { $_.name -eq "Priority" } | Select-Object -First 1
+$PriorityFieldId = $null
+$PriorityOptions = @{}
+
+if ($PriorityField) {
+  $PriorityFieldId = $PriorityField.id
+
+  foreach ($Priority in @("P0", "P1", "P2", "P3")) {
+    $Option = @($PriorityField.options) | Where-Object { $_.name -eq $Priority } | Select-Object -First 1
+    if ($Option) {
+      $PriorityOptions[$Priority] = $Option.id
+    }
+  }
+
+  Write-Host "Priority field found." -ForegroundColor Green
+}
+else {
+  Write-Host "Priority field not found. Status will be set, and priority labels will be added." -ForegroundColor Yellow
+}
+
+# ------------------------------------------------------------
+# Labels
+# ------------------------------------------------------------
+
+$LabelsToEnsure = @(
+  @{ Name = "type:user-story"; Color = "5319e7"; Description = "User story" },
+  @{ Name = "type:bug"; Color = "d73a4a"; Description = "Bug or broken behavior" },
+  @{ Name = "type:feature"; Color = "0e8a16"; Description = "Feature or capability" },
+  @{ Name = "type:qa"; Color = "fbca04"; Description = "Testing and verification" },
+  @{ Name = "type:security"; Color = "b60205"; Description = "Security, validation, auth, vulnerabilities" },
+  @{ Name = "type:doc"; Color = "0075ca"; Description = "Documentation" },
+  @{ Name = "type:chore"; Color = "cfd3d7"; Description = "Maintenance chore" },
+
+  @{ Name = "priority:p0"; Color = "b60205"; Description = "Critical MVP blocker" },
+  @{ Name = "priority:p1"; Color = "d93f0b"; Description = "Important MVP work" },
+  @{ Name = "priority:p2"; Color = "fbca04"; Description = "Useful but not immediate" },
+  @{ Name = "priority:p3"; Color = "cfd3d7"; Description = "Future work" },
+
+  @{ Name = "scope:mvp"; Color = "0052cc"; Description = "Required for MVP" },
+  @{ Name = "scope:stabilization"; Color = "1d76db"; Description = "Stabilization work" },
+  @{ Name = "scope:roadmap"; Color = "c2e0c6"; Description = "Roadmap work" },
+  @{ Name = "scope:post-mvp"; Color = "bfdadc"; Description = "Post-MVP work" },
+
+  @{ Name = "service:web"; Color = "f9d0c4"; Description = "Next.js web app" },
+  @{ Name = "service:api"; Color = "d4c5f9"; Description = "Go API" },
+  @{ Name = "service:worker"; Color = "c5def5"; Description = "Python worker" },
+  @{ Name = "service:docker"; Color = "bfd4f2"; Description = "Docker/runtime" },
+  @{ Name = "service:postgres"; Color = "bfe5bf"; Description = "Postgres" },
+  @{ Name = "service:redis"; Color = "fef2c0"; Description = "Redis" },
+  @{ Name = "service:qdrant"; Color = "d1f0ff"; Description = "Qdrant" }
+)
+
+$ExistingLabels = gh label list --repo $Repo --limit 1000 --json name | ConvertFrom-Json
+
+foreach ($Label in $LabelsToEnsure) {
+  $Found = @($ExistingLabels) | Where-Object { $_.name -eq $Label.Name } | Select-Object -First 1
+
+  if (-not $Found) {
+    gh label create $Label.Name `
+      --repo $Repo `
+      --color $Label.Color `
+      --description $Label.Description | Out-Null
+  }
+}
+
+# ------------------------------------------------------------
+# Clear project cards only
+# ------------------------------------------------------------
+
+Write-Host "Clearing project cards only..." -ForegroundColor Yellow
+
+do {
+  $ItemsJson = gh project item-list $ProjectNumber --owner $ProjectOwner --limit 100 --format json | ConvertFrom-Json
+  $Items = @($ItemsJson.items)
+
+  foreach ($Item in $Items) {
+    gh project item-delete $ProjectNumber `
+      --owner $ProjectOwner `
+      --id $Item.id | Out-Null
+  }
+} while ($Items.Count -gt 0)
+
+# ------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------
+
+function New-IssueBody {
+  param(
+    [string]$Purpose,
+    [string[]]$Acceptance,
+    [string]$Status,
+    [string]$Priority
+  )
+
+  $AcceptanceText = ""
+  foreach ($Item in $Acceptance) {
+    $AcceptanceText += "- [ ] $Item`n"
+  }
+
+  return @"
+## Purpose
+
+$Purpose
+
+## Acceptance Criteria
+
+$AcceptanceText
+## Kanban Placement
+
+Status: $Status
+
+Priority: $Priority
+
+## Agile Reset Rule
+
+Repository evidence can inform this card, but it does not make this card Done.
+
+This card becomes Done only after it is pulled, verified against acceptance criteria in this delivery cycle, reviewed, and accepted.
+"@
+}
+
+function Get-OrCreate-OpenIssue {
+  param(
+    [string]$Title,
+    [string]$Body,
+    [string[]]$Labels
+  )
+
+  $Search = "repo:$Repo in:title `"$Title`""
+
+  $Existing = gh issue list `
+    --repo $Repo `
+    --state open `
+    --search $Search `
+    --limit 100 `
+    --json number,title,url | ConvertFrom-Json
+
+  $Exact = @($Existing) | Where-Object { $_.title -eq $Title } | Select-Object -First 1
+
+  if ($Exact) {
+    gh issue edit $Exact.number `
+      --repo $Repo `
+      --add-label ($Labels -join ",") | Out-Null
+
+    return $Exact.url
+  }
+
+  $Args = @(
+    "issue", "create",
+    "--repo", $Repo,
+    "--title", $Title,
+    "--body", $Body
+  )
+
+  foreach ($Label in $Labels) {
+    $Args += "--label"
+    $Args += $Label
+  }
+
+  return gh @Args
+}
+
+function Add-ToProject {
+  param(
+    [string]$IssueUrl,
+    [string]$Status,
+    [string]$Priority
+  )
+
+  $ProjectItem = gh project item-add $ProjectNumber `
+    --owner $ProjectOwner `
+    --url $IssueUrl `
+    --format json | ConvertFrom-Json
+
+  gh project item-edit `
+    --id $ProjectItem.id `
+    --project-id $ProjectId `
+    --field-id $StatusFieldId `
+    --single-select-option-id $StatusOptions[$Status] | Out-Null
+
+  if ($PriorityFieldId -and $PriorityOptions.ContainsKey($Priority)) {
+    gh project item-edit `
+      --id $ProjectItem.id `
+      --project-id $ProjectId `
+      --field-id $PriorityFieldId `
+      --single-select-option-id $PriorityOptions[$Priority] | Out-Null
+  }
+}
+
+function Add-Card {
+  param(
+    [string]$Title,
+    [string]$Status,
+    [string]$Priority,
+    [string]$Purpose,
+    [string[]]$Labels,
+    [string[]]$Acceptance
+  )
+
+  $Body = New-IssueBody `
+    -Purpose $Purpose `
+    -Acceptance $Acceptance `
+    -Status $Status `
+    -Priority $Priority
+
+  $IssueUrl = Get-OrCreate-OpenIssue `
+    -Title $Title `
+    -Body $Body `
+    -Labels $Labels
+
+  Add-ToProject `
+    -IssueUrl $IssueUrl `
+    -Status $Status `
+    -Priority $Priority
+
+  Write-Host "Placed: $Title -> $Status / $Priority" -ForegroundColor Green
+}
+
+# ------------------------------------------------------------
+# Cards
+# ------------------------------------------------------------
+
+$Cards = @(
+  @{
+    Title = "US-000: Transform Raw Creator Footage Into Story-Ready Output"
+    Status = "In Progress"
+    Priority = "P0"
+    Labels = @("type:user-story","priority:p0","scope:mvp","service:web","service:api","service:worker","service:postgres","service:redis","service:qdrant")
+    Purpose = "Anchor story for the stabilized ZIP MVP."
+    Acceptance = @(
+      "User can register and log in.",
+      "User can upload a ZIP containing supported video files.",
+      "API stores the ZIP and creates a batch.",
+      "Redis queues a worker job.",
+      "Worker consumes the job.",
+      "Worker safely extracts supported videos.",
+      "Worker processes media.",
+      "Worker writes clips and storyline data to Postgres.",
+      "Worker upserts vectors to Qdrant or reports failure clearly.",
+      "Batch detail shows analyzed clips, status, and storyline results or a clear failure reason."
+    )
+  }
+
+  @{
+    Title = "CS-101: Unified Docker Orchestration and Multi-Stage Environment Layout"
+    Status = "Ready"
+    Priority = "P0"
+    Labels = @("type:feature","priority:p0","scope:mvp","service:docker","service:web","service:api","service:worker","service:postgres","service:redis","service:qdrant")
+    Purpose = "Standardize local development with Docker Compose for web, API, worker, Postgres, Redis, and Qdrant."
+    Acceptance = @(
+      "docker compose config validates.",
+      "docker compose up --build starts the full local stack or exposes the exact blocker.",
+      "All services have clear Dockerfiles or build paths.",
+      "Service environment variables are correctly passed through Compose."
+    )
+  }
+
+  @{
+    Title = "CS-114: Local Docker Runtime Repair and Verification"
+    Status = "Ready"
+    Priority = "P0"
+    Labels = @("type:chore","priority:p0","scope:mvp","service:docker")
+    Purpose = "Repair local Docker and Compose runtime so the ClipSense stack can be verified."
+    Acceptance = @(
+      "docker --version works from repo root.",
+      "docker compose version works from repo root.",
+      "docker info connects to the daemon.",
+      "docker compose config validates.",
+      "docker compose up --build boots the stack or exposes the next concrete blocker."
+    )
+  }
+
+  @{
+    Title = "CS-110: Worker Docker Packaging Fix"
+    Status = "Ready"
+    Priority = "P0"
+    Labels = @("type:bug","priority:p0","scope:mvp","service:worker","service:docker")
+    Purpose = "Fix the Python worker Docker image so it includes every local module imported by main.py."
+    Acceptance = @(
+      "Worker Docker image includes main.py and zip_safety.py.",
+      "Worker container starts without ModuleNotFoundError.",
+      "Docker build remains reproducible.",
+      "Worker packaging is verified through Compose or documented as Bugged by Docker runtime."
+    )
+  }
+
+  @{
+    Title = "CS-102: Relational Postgres Schema and DB Migration Harness"
+    Status = "Ready"
+    Priority = "P1"
+    Labels = @("type:feature","priority:p1","scope:mvp","service:postgres","service:api","service:worker")
+    Purpose = "Create and verify the MVP Postgres schema baseline."
+    Acceptance = @(
+      "Database initializes cleanly.",
+      "Required MVP tables are created automatically or through documented migration commands.",
+      "Relationships between users, batches, clips, and storylines are enforced or documented.",
+      "Broader schema work is split into separate backlog cards."
+    )
+  }
+
+  @{
+    Title = "CS-107: Local JWT Auth and Protected Batch Routes"
+    Status = "Ready"
+    Priority = "P1"
+    Labels = @("type:feature","priority:p1","scope:mvp","service:api","service:web")
+    Purpose = "Verify local JWT register/login flow and protected batch routes."
+    Acceptance = @(
+      "Register returns a token.",
+      "Login returns a token.",
+      "Protected routes reject missing or invalid tokens.",
+      "Protected routes accept a valid token.",
+      "Runtime auth flow is verified against the running stack."
+    )
+  }
+
+  @{
+    Title = "US-001: ZIP Batch Upload"
+    Status = "Backlog"
+    Priority = "P0"
+    Labels = @("type:user-story","priority:p0","scope:mvp","service:web","service:api")
+    Purpose = "Creator can upload a ZIP containing multiple videos so ClipSense can process a full batch."
+    Acceptance = @(
+      "Valid ZIP can be selected or dragged in web app.",
+      "API accepts valid ZIP uploads.",
+      "Oversized uploads are rejected safely.",
+      "Non-ZIP files are rejected before enqueueing.",
+      "Successful upload creates a batch and queues Redis job."
+    )
+  }
+
+  @{
+    Title = "US-002: Safe ZIP Extraction"
+    Status = "Backlog"
+    Priority = "P0"
+    Labels = @("type:user-story","priority:p0","scope:mvp","service:worker")
+    Purpose = "Creator ZIPs are safely extracted so unsafe files, junk files, or corrupted archives do not break processing."
+    Acceptance = @(
+      "Path traversal is rejected.",
+      "Absolute paths are rejected.",
+      "Unsupported files are ignored.",
+      "File count and decompressed size limits are respected.",
+      "Worker container includes required Python modules."
+    )
+  }
+
+  @{
+    Title = "US-003: AI Video Processing"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:user-story","priority:p1","scope:mvp","service:worker","service:qdrant")
+    Purpose = "Creator receives transcript, summaries, mood, role, topic, and basic storyline structure."
+    Acceptance = @(
+      "Worker extracts audio.",
+      "Worker produces transcript text.",
+      "Worker creates clip metadata.",
+      "Worker classifies mood, topic, and role.",
+      "Worker generates basic storyline order.",
+      "Qdrant upsert succeeds or failure is clear."
+    )
+  }
+
+  @{
+    Title = "US-004: Batch Result Review"
+    Status = "Backlog"
+    Priority = "P0"
+    Labels = @("type:user-story","priority:p0","scope:mvp","service:web")
+    Purpose = "Creator can view processed batch results in the web app."
+    Acceptance = @(
+      "User can navigate to batch list.",
+      "User can open batch detail page.",
+      "Batch detail displays clips.",
+      "Batch detail displays storyline data where available.",
+      "Frontend links point to real routes.",
+      "Logged-in users are not falsely redirected during auth hydration."
+    )
+  }
+
+  @{
+    Title = "US-005: Clear Processing Failure Reasons"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:user-story","priority:p1","scope:mvp","service:web","service:api","service:worker")
+    Purpose = "Creator can see why a batch failed."
+    Acceptance = @(
+      "Failed batches store safe failure reason.",
+      "API returns failure reason.",
+      "Web displays failure reason clearly.",
+      "Raw stack traces or secrets are not exposed.",
+      "User is not left with infinite loading."
+    )
+  }
+
+  @{
+    Title = "US-006: Poison Pill Job Handling"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:user-story","priority:p1","scope:mvp","service:worker","service:redis")
+    Purpose = "Prevent one broken upload from blocking the worker queue."
+    Acceptance = @(
+      "Worker catches fatal processing errors.",
+      "Failed jobs are marked failed.",
+      "Safe failure reason is persisted.",
+      "Worker moves to next job.",
+      "Dead-letter or terminal failure behavior is documented."
+    )
+  }
+
+  @{
+    Title = "US-007: Disk Cleanup For Large Media"
+    Status = "Backlog"
+    Priority = "P2"
+    Labels = @("type:user-story","priority:p2","scope:stabilization","service:worker")
+    Purpose = "Keep temporary uploads, extracted videos, and audio files from filling disk."
+    Acceptance = @(
+      "Temporary processing folders are cleaned after success.",
+      "Failed batches keep necessary diagnostics only.",
+      "Cleanup avoids active files.",
+      "Cleanup behavior is documented.",
+      "Disk usage does not grow forever."
+    )
+  }
+
+  @{
+    Title = "US-008: Full Local Runtime Verification"
+    Status = "Backlog"
+    Priority = "P0"
+    Labels = @("type:user-story","priority:p0","scope:mvp","service:docker","service:web","service:api","service:worker")
+    Purpose = "Boot the full Docker Compose stack and verify ZIP MVP end to end."
+    Acceptance = @(
+      "docker --version works.",
+      "docker compose version works.",
+      "docker compose config validates.",
+      "docker compose up --build starts all services.",
+      "API health responds.",
+      "Web app loads.",
+      "Worker starts without missing module errors."
+    )
+  }
+
+  @{
+    Title = "US-009: Upload And API Error Clarity"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:user-story","priority:p1","scope:mvp","service:web","service:api")
+    Purpose = "Creator sees clear upload, auth, and API errors."
+    Acceptance = @(
+      "Bad input returns a 400-level response.",
+      "Missing or invalid auth returns 401.",
+      "Oversized uploads return 413.",
+      "Conflicts return 409 where applicable.",
+      "Frontend displays safe error messages.",
+      "API does not return 500 for normal user mistakes."
+    )
+  }
+
+  @{
+    Title = "US-010: Authenticated Export Download"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:user-story","priority:p1","scope:mvp","service:web","service:api")
+    Purpose = "Creator can export processed batch results for use outside ClipSense."
+    Acceptance = @(
+      "Export works for authenticated users.",
+      "Frontend does not rely on plain anchor without bearer token.",
+      "Export includes batch, clips, and storyline data where available.",
+      "CSV or JSON export works at MVP quality.",
+      "Advanced editor-ready export remains future scope."
+    )
+  }
+
+  @{
+    Title = "CS-108: Local Browser CORS Policy"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:security","priority:p1","scope:mvp","service:api","service:web")
+    Purpose = "Maintain local CORS policy for browser requests from web app to Go API."
+    Acceptance = @(
+      "Local browser requests from web app are allowed.",
+      "Auth headers are allowed.",
+      "Upload requests are allowed.",
+      "Unexpected origins are rejected."
+    )
+  }
+
+  @{
+    Title = "CS-109: JWT Secret Configuration and Production Guardrails"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:security","priority:p1","scope:stabilization","service:api")
+    Purpose = "Document and guard local JWT defaults so dev-secret is not treated as production-safe."
+    Acceptance = @(
+      "Docs state dev-secret is local-only.",
+      "Shared or deployed environments require explicit JWT_SECRET.",
+      "API logs or fails clearly if production mode lacks safe secret."
+    )
+  }
+
+  @{
+    Title = "CS-103: Go API Multipart ZIP Intake"
+    Status = "Backlog"
+    Priority = "P0"
+    Labels = @("type:feature","priority:p0","scope:mvp","service:api","service:postgres","service:redis")
+    Purpose = "Build and harden Go API multipart ZIP upload endpoint."
+    Acceptance = @(
+      "API accepts MVP ZIP uploads.",
+      "Oversized files are rejected safely.",
+      "Non-ZIP files are rejected before enqueueing.",
+      "Upload creates batch record.",
+      "Upload returns structured batch ID.",
+      "Upload failure does not leave orphaned records.",
+      "Client errors return correct 4xx codes."
+    )
+  }
+
+  @{
+    Title = "CS-111: Upload Size and ZIP Validation Hardening"
+    Status = "Backlog"
+    Priority = "P0"
+    Labels = @("type:security","priority:p0","scope:mvp","service:api")
+    Purpose = "Harden upload endpoint with true request body size limit and ZIP validation."
+    Acceptance = @(
+      "API enforces clear max upload size.",
+      "Oversized uploads return safe error.",
+      "ZIP validation runs before persistence and enqueue.",
+      "Existing valid ZIP uploads still work."
+    )
+  }
+
+  @{
+    Title = "CS-112: API Error Response Semantics"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:bug","priority:p1","scope:mvp","service:api")
+    Purpose = "Return accurate HTTP status codes for validation, auth, conflict, upload, and server errors."
+    Acceptance = @(
+      "Bad JSON or input returns 400.",
+      "Missing or invalid auth returns 401.",
+      "Duplicate or conflict cases return 409.",
+      "Oversized uploads return 413.",
+      "Server faults still return 500.",
+      "Error bodies are safe."
+    )
+  }
+
+  @{
+    Title = "CS-201: Go API Redis Task Publisher and Job State Machine"
+    Status = "Backlog"
+    Priority = "P0"
+    Labels = @("type:feature","priority:p0","scope:mvp","service:api","service:redis","service:worker")
+    Purpose = "Wire Redis task publishing and worker consumption with batch status tracking."
+    Acceptance = @(
+      "API enqueues JSON job payload.",
+      "API returns without waiting for processing.",
+      "Worker consumes queued job.",
+      "Batch status moves through pending, processing, complete, or failed.",
+      "Crashes do not leave batches permanently stuck.",
+      "Runtime queue behavior is verified under Compose."
+    )
+  }
+
+  @{
+    Title = "CS-104: Python Worker Safe Extraction and Audio Prep Pipeline"
+    Status = "Backlog"
+    Priority = "P0"
+    Labels = @("type:feature","priority:p0","scope:mvp","service:worker")
+    Purpose = "Safely extract ZIPs, filter junk files, and prepare audio for transcription."
+    Acceptance = @(
+      "ZIP extraction is safe.",
+      "Non-video files are ignored.",
+      "Corrupted videos are isolated.",
+      "Audio is normalized for transcription.",
+      "Worker logs clear processing status.",
+      "Worker container imports all local modules."
+    )
+  }
+
+  @{
+    Title = "CS-203: Python Worker Transcription Integration"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:feature","priority:p1","scope:mvp","service:worker")
+    Purpose = "Use Whisper or compatible transcription to convert prepared audio into transcript output."
+    Acceptance = @(
+      "Worker produces transcript text.",
+      "Transcription failure marks batch failed or isolates failed clip by policy.",
+      "Transcript data persists or passes forward reliably.",
+      "Timestamped segment support is tracked separately if not included."
+    )
+  }
+
+  @{
+    Title = "CS-205: Basic MVP Clip Classification and Taxonomy Foundation"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:feature","priority:p1","scope:mvp","service:worker")
+    Purpose = "Classify clips with MVP taxonomy such as mood, topic, and clip role."
+    Acceptance = @(
+      "Output includes mood, topic, and role.",
+      "Classification is persisted with clip.",
+      "Invalid classifier output is rejected or normalized if structured classifier is added.",
+      "Advanced classifier work is not required before runtime verification."
+    )
+  }
+
+  @{
+    Title = "CS-204: Qdrant Vector Upsert Pipeline"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:feature","priority:p1","scope:mvp","service:worker","service:qdrant")
+    Purpose = "Embed transcript or clip text and upsert vectors into Qdrant."
+    Acceptance = @(
+      "Worker creates embeddings.",
+      "Qdrant collection is created or reused safely.",
+      "Vectors upsert with useful payload metadata.",
+      "Qdrant failure is logged and handled clearly."
+    )
+  }
+
+  @{
+    Title = "CS-207: Persist and Display Batch Failure Reasons"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:feature","priority:p1","scope:mvp","service:worker","service:api","service:web","service:postgres")
+    Purpose = "Persist safe batch failure reasons and expose them through API and web."
+    Acceptance = @(
+      "Failed batches store safe failure reason.",
+      "API batch detail returns failure reason.",
+      "Web batch detail displays reason without raw stack traces.",
+      "Tests cover worker failure case."
+    )
+  }
+
+  @{
+    Title = "CS-301: MVP Creator Dashboard and Batch Review Views"
+    Status = "Backlog"
+    Priority = "P0"
+    Labels = @("type:feature","priority:p0","scope:mvp","service:web","service:api")
+    Purpose = "Build and stabilize creator dashboard and batch review surfaces."
+    Acceptance = @(
+      "Dashboard loads without broken routing.",
+      "User can navigate to upload, batch list, batch detail, and settings.",
+      "Batch detail displays clips and storylines returned by API.",
+      "Layout is responsive enough for MVP usage."
+    )
+  }
+
+  @{
+    Title = "CS-305: Fix Dashboard Route Structure"
+    Status = "Backlog"
+    Priority = "P0"
+    Labels = @("type:bug","priority:p0","scope:mvp","service:web")
+    Purpose = "Fix frontend links and redirects so they point to real Next.js routes."
+    Acceptance = @(
+      "Dashboard, upload, settings, and batch detail URLs resolve.",
+      "Auth redirects land on real routes.",
+      "npm run build still passes."
+    )
+  }
+
+  @{
+    Title = "CS-306: Stabilize Frontend Auth Hydration"
+    Status = "Backlog"
+    Priority = "P0"
+    Labels = @("type:bug","priority:p0","scope:mvp","service:web")
+    Purpose = "Prevent protected pages from redirecting before localStorage token loads."
+    Acceptance = @(
+      "Logged-in users can refresh protected pages without false redirect.",
+      "Missing-token users still redirect to login.",
+      "Auth loading state is explicit."
+    )
+  }
+
+  @{
+    Title = "CS-304: Frontend Network Interceptor and Global Error Toast System"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:feature","priority:p1","scope:mvp","service:web")
+    Purpose = "Add global API error handling so failures do not leave user stuck."
+    Acceptance = @(
+      "API failures trigger visible error toasts.",
+      "Upload failures show clear reasons.",
+      "Auth failures redirect or notify correctly.",
+      "Long-running batch errors do not leave UI stuck.",
+      "Network disconnects show recoverable state.",
+      "Error messages are safe."
+    )
+  }
+
+  @{
+    Title = "CS-405: MVP Batch Export and Future Narrative Package Export"
+    Status = "Backlog"
+    Priority = "P2"
+    Labels = @("type:feature","priority:p2","scope:mvp","service:web","service:api")
+    Purpose = "Fix MVP authenticated JSON or CSV export and defer editor-ready exports."
+    Acceptance = @(
+      "MVP export works with auth.",
+      "Export includes batch, clips, and storyline order where available.",
+      "Advanced editor-ready export is deferred."
+    )
+  }
+
+  @{
+    Title = "CS-113: Frontend Dependency Vulnerability Cleanup"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:security","priority:p1","scope:stabilization","service:web")
+    Purpose = "Resolve or explicitly triage known frontend dependency vulnerabilities."
+    Acceptance = @(
+      "Upgrade plan is reviewed.",
+      "Vulnerable dependencies are upgraded where safe.",
+      "npm ci, npm run build, and npm audit are rerun.",
+      "Remaining vulnerabilities are documented with accepted risk."
+    )
+  }
+
+  @{
+    Title = "CS-115: CI Build/Test Validation"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:qa","priority:p1","scope:stabilization","service:api","service:worker","service:web","service:docker")
+    Purpose = "Keep CI aligned with actual repo commands and dependency boundaries."
+    Acceptance = @(
+      "CI runs on PRs and pushes to main.",
+      "API job runs Go commands from apps/api.",
+      "Worker job runs compile and tests from apps/api/ai_worker.",
+      "Web job runs npm ci and build from apps/web.",
+      "Compose job validates docker compose config."
+    )
+  }
+
+  @{
+    Title = "CS-208: End-to-End ZIP MVP Verification Gate"
+    Status = "Backlog"
+    Priority = "P0"
+    Labels = @("type:qa","priority:p0","scope:mvp","service:docker","service:web","service:api","service:worker","service:postgres","service:redis","service:qdrant")
+    Purpose = "Run and record the full ZIP upload-to-analysis runtime verification."
+    Acceptance = @(
+      "Docker Compose boots all services.",
+      "API health returns DB and Redis health.",
+      "Web loads locally.",
+      "Register and login works.",
+      "ZIP upload creates pending batch and Redis job.",
+      "Worker consumes job.",
+      "Worker extracts videos safely.",
+      "Batch becomes complete or failed with visible reason.",
+      "Successful run writes clips and storyline to Postgres.",
+      "Qdrant upsert succeeds or failure is documented."
+    )
+  }
+
+  @{
+    Title = "CS-117: Stabilization Documentation Refresh"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:doc","priority:p1","scope:stabilization")
+    Purpose = "Keep stabilization docs synchronized with accepted verification results and blockers."
+    Acceptance = @(
+      "Docs reflect current Go status.",
+      "Docs reflect current Docker blocker.",
+      "Docs distinguish ZIP MVP from future direct video and link intake.",
+      "Docs do not overclaim runtime verification."
+    )
+  }
+
+  @{
+    Title = "CS-105: Postgres Connection Pooling and Health-Check Handshake"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:feature","priority:p1","scope:stabilization","service:api","service:postgres")
+    Purpose = "Add resilient DB connection handling so API survives late Postgres boot."
+    Acceptance = @(
+      "API retries Postgres connection with bounded backoff.",
+      "API exposes DB health through /api/health.",
+      "API does not crash immediately if Postgres starts late.",
+      "Failed DB connection returns clear health failure."
+    )
+  }
+
+  @{
+    Title = "CS-106: Disk-Space Janitor and TTL Cleanup Daemon"
+    Status = "Backlog"
+    Priority = "P2"
+    Labels = @("type:feature","priority:p2","scope:stabilization","service:worker")
+    Purpose = "Clean old uploads, extracted files, temporary audio, and processing artifacts safely."
+    Acceptance = @(
+      "Temporary extraction folders are cleaned after successful processing.",
+      "Failed batches keep only required diagnostics.",
+      "Cleanup runs on predictable interval.",
+      "Cleanup cannot delete active in-progress files.",
+      "Disk usage does not grow forever."
+    )
+  }
+
+  @{
+    Title = "CS-116: Replace Legacy SQLite Backup/Restore Scripts"
+    Status = "Backlog"
+    Priority = "P2"
+    Labels = @("type:chore","priority:p2","scope:stabilization","service:postgres")
+    Purpose = "Replace or mark legacy SQLite backup and restore scripts now that Docker MVP is Postgres-first."
+    Acceptance = @(
+      "Scripts support Postgres or are clearly labeled legacy/out-of-scope.",
+      "Docs do not instruct developers to use SQLite scripts for active Docker MVP."
+    )
+  }
+
+  @{
+    Title = "CS-119: Python Dependency Audit Path"
+    Status = "Backlog"
+    Priority = "P2"
+    Labels = @("type:security","priority:p2","scope:stabilization","service:worker")
+    Purpose = "Establish reliable Python dependency audit path for the worker."
+    Acceptance = @(
+      "Python worker dependencies can be audited with documented command or blocker is documented precisely.",
+      "Worker dependencies remain installable.",
+      "Worker compile/tests still pass.",
+      "No fake lockfile is introduced."
+    )
+  }
+
+  @{
+    Title = "CS-202: Go API Progress Broadcaster"
+    Status = "Backlog"
+    Priority = "P2"
+    Labels = @("type:feature","priority:p2","scope:roadmap","service:api","service:web")
+    Purpose = "Add progress update channel for processing status after MVP foundations are accepted."
+    Acceptance = @(
+      "Processing stages can be reported to frontend.",
+      "Events include extraction, transcription, and analysis stages.",
+      "Users only receive updates for their own batches.",
+      "Disconnected progress channel does not break processing."
+    )
+  }
+
+  @{
+    Title = "CS-206: Poison Pill Queue Catch-All and Dead Letter Queue"
+    Status = "Backlog"
+    Priority = "P1"
+    Labels = @("type:feature","priority:p1","scope:mvp","service:worker","service:redis","service:postgres")
+    Purpose = "Add terminal failure or dead-letter behavior for corrupted or repeatedly failing jobs."
+    Acceptance = @(
+      "Worker catches fatal job errors.",
+      "Failed job is marked failed in Postgres.",
+      "Safe failure reason is persisted.",
+      "Broken job moves to dead-letter or terminal failure state.",
+      "Worker continues processing next job.",
+      "One corrupted upload cannot trap queue forever."
+    )
+  }
+
+  @{
+    Title = "US-011: Direct Video Upload"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:user-story","priority:p3","scope:roadmap","service:web","service:api")
+    Purpose = "Future user story for direct single-video upload."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "US-012: Public Or User-Provided Link Intake"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:user-story","priority:p3","scope:roadmap","service:api","service:worker")
+    Purpose = "Future user story for supported video link ingestion."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "US-013: Video Segment Preview"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:user-story","priority:p3","scope:post-mvp","service:web")
+    Purpose = "Future user story for previewing exact video segments tied to clips or transcripts."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "US-014: Timeline Story Workspace"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:user-story","priority:p3","scope:post-mvp","service:web")
+    Purpose = "Future user story for arranging clips into a storyline workspace."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "US-015: Advanced Narrative Intelligence"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:user-story","priority:p3","scope:post-mvp","service:worker","service:qdrant")
+    Purpose = "Future user story for stronger narrative sequencing and pacing."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "US-016: Scaled Cloud Uploads"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:user-story","priority:p3","scope:post-mvp","service:web","service:api")
+    Purpose = "Future user story for production-scale cloud upload handling."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "US-017: Faster Video Processing Engine"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:user-story","priority:p3","scope:post-mvp","service:worker")
+    Purpose = "Future user story for native or Rust acceleration after bottlenecks are measured."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "US-018: Editor-Ready Export Package"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:user-story","priority:p3","scope:post-mvp","service:web","service:api")
+    Purpose = "Future user story for editor-ready export packages."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "CS-302: Native Video Segment Player"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:feature","priority:p3","scope:post-mvp","service:web")
+    Purpose = "Future feature for video segment playback and timestamp seeking."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "CS-303: Timeline Workspace State Store"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:feature","priority:p3","scope:post-mvp","service:web")
+    Purpose = "Future frontend state layer for arranging clips into a timeline."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "CS-401: Remote Video Link Ingestion Worker"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:feature","priority:p3","scope:roadmap","service:api","service:worker")
+    Purpose = "Future worker capability for controlled public or user-provided link ingestion."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "CS-402: Cloud Multipart Upload Pipeline"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:feature","priority:p3","scope:post-mvp","service:web","service:api")
+    Purpose = "Future production upload path using object storage and presigned multipart uploads."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "CS-403: Graph-Based Narrative Connector"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:feature","priority:p3","scope:post-mvp","service:worker","service:qdrant")
+    Purpose = "Future graph-based narrative sequencing engine."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "CS-404: Rust Video Core for Scene Boundary Detection"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:feature","priority:p3","scope:post-mvp","service:worker")
+    Purpose = "Future Rust or native engine for faster video scene analysis."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+
+  @{
+    Title = "Advanced scope of CS-405: Editor-Ready Export Package"
+    Status = "Icebox"
+    Priority = "P3"
+    Labels = @("type:feature","priority:p3","scope:post-mvp","service:web","service:api")
+    Purpose = "Future editor-ready export scope beyond basic authenticated MVP export."
+    Acceptance = @(
+      "Does not block ZIP MVP.",
+      "Dependencies are identified before leaving Icebox.",
+      "Scope is refined before entering Backlog."
+    )
+  }
+)
+
+# ------------------------------------------------------------
+# Create / reuse / place cards
+# ------------------------------------------------------------
+
+foreach ($Card in $Cards) {
+  Add-Card `
+    -Title $Card.Title `
+    -Status $Card.Status `
+    -Priority $Card.Priority `
+    -Purpose $Card.Purpose `
+    -Labels $Card.Labels `
+    -Acceptance $Card.Acceptance
+}
+
+Write-Host ""
+Write-Host "Done. ClipSense board rebuilt." -ForegroundColor Green
+Write-Host "In Progress: US-000" -ForegroundColor Green
+Write-Host "Ready: CS-101, CS-114, CS-110, CS-102, CS-107" -ForegroundColor Green
+Write-Host "Review, Bugged, and Done are empty." -ForegroundColor Green
+Write-Host "No repo issues were deleted, closed, reopened, or body-overwritten." -ForegroundColor Green
+
+

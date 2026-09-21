@@ -1,14 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api/client'
 import { useAuthToken } from '@/hooks/useAuthToken'
 
 export default function LandingPage() {
   const router = useRouter()
-  const { token, setToken } = useAuthToken()
+  const { token, ready, setToken } = useAuthToken()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -30,9 +30,9 @@ export default function LandingPage() {
     }
   }
 
-  if (token) {
-    router.replace('/dashboard')
-  }
+  useEffect(() => {
+    if (ready && token) router.replace('/dashboard')
+  }, [ready, router, token])
 
   return (
     <main className="max-w-5xl mx-auto px-6 py-16 space-y-16">

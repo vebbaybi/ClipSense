@@ -1,0 +1,253 @@
+# Sprint 1 Work Unit 1 Report
+
+## 1. Scope
+
+Runtime startup and routing baseline only: worker image packaging, canonical web
+routes, API liveness/readiness, Go server lifecycle, startup configuration
+inventory, Compose health behavior, validation, documentation, and Kanban.
+Sprint 1 Work Unit 2 security and upload hardening is excluded.
+
+## 2. Starting Branch
+
+`backlog-repair-refinement`
+
+## 3. Starting Commit
+
+`49596612fae8cc1bc20675b722efdba107647f40`
+
+## 4. Worktree Condition
+
+The starting branch was six commits ahead of its upstream and contained seven
+untracked user files. They were not modified, moved, staged, or committed. Work
+continued on `codex/clipsense-sprint-1-runtime-baseline` from the exact starting
+commit. The workspace is under OneDrive.
+
+## 5. Worker Packaging Findings
+
+`main.py` imports the local `zip_safety.py`, but the old Dockerfile copied only
+`main.py`. The image now copies both runtime modules and uses a worker-specific
+`.dockerignore` to exclude virtual environments, caches, tests, models, media,
+data, secrets, and temporary files. The build checks Python compilation, module
+imports, and `ffmpeg -version`; the command remains `python main.py`.
+
+Runtime initialization was moved behind `initialize_runtime()` so importing the
+module does not download models. Actual worker startup still loads Whisper model
+`small` and sentence-transformer `all-MiniLM-L6-v2`; their libraries use the
+container user's standard caches (normally under `/root/.cache`), and a first
+startup blocks while downloads complete.
+
+## 6. Route Findings
+
+The former `(dashboard)` group created no URL segment and collided with `/`.
+Its five source files were moved beneath the real `src/app/dashboard` segment.
+Navigation and redirects now target the canonical dashboard paths. Auth-token
+hydration is explicit so client redirects do not execute during prerender.
+The Next.js production build reports `/`, `/dashboard`,
+`/dashboard/batches/new`, `/dashboard/batches/[id]`, and
+`/dashboard/settings` without a duplicate route.
+
+## 7. API Lifecycle Findings
+
+The former dependency-coupled health handler is now split into process liveness
+and Postgres/Redis readiness. Dependency checks have a two-second deadline and
+responses expose only safe check states. `/api/health` remains a readiness alias.
+The server now has explicit timeouts, handles interrupt and termination, performs
+a bounded 15-second shutdown, and closes database and Redis resources.
+
+## 8. Configuration Findings
+
+API reads `API_ADDR`, `DATABASE_URL`, `REDIS_URL`, `UPLOAD_DIR`,
+`CORS_ALLOWED_ORIGINS`, and `JWT_SECRET`. Worker reads `DB_DRIVER`, `DB_PATH`,
+`DATABASE_URL`, `UPLOAD_DIR`, `PROCESS_DIR`, `WHISPER_MODEL`, `REDIS_URL`,
+`QDRANT_HOST`, `QDRANT_PORT`, and `QDRANT_COLLECTION`. Web reads
+`NEXT_PUBLIC_API_URL`. Compose's API `DB_DRIVER` value is unused; worker
+`UPLOAD_DIR` is currently unused. Container dependency addresses and the public
+browser API URL intentionally differ. The predictable JWT fallback remains an
+explicit Work Unit 2 blocker.
+
+## 9. Compose Findings
+
+The root `docker-compose.yml` is authoritative. Postgres and Redis use native
+probes; Qdrant checks its HTTP `/readyz`; API readiness uses
+`/api/health/ready`; web checks `/`. API waits for Postgres and Redis, worker
+waits for Postgres, Redis, and Qdrant, and web waits for API readiness. No
+circular dependency was introduced. Host-port hardening is deferred.
+
+## 10. Changed Files
+
+- `apps/api/ai_worker/Dockerfile`
+- `apps/api/ai_worker/main.py`
+- `apps/api/main.go`
+- `apps/api/main_test.go`
+- `apps/web/src/app/page.tsx`
+- `apps/web/src/hooks/useAuthToken.ts`
+- `docker-compose.yml`
+- `scripts/utils/health-check.sh`
+- `README.md`
+- `docs/CURRENT_STATE.md`
+- `docs/planning/SPRINT_1_BACKLOG.md`
+
+## 11. Added Files
+
+- `apps/api/ai_worker/.dockerignore`
+- `docs/audits/SPRINT_1_WORK_UNIT_1_REPORT.md`
+
+## 12. Moved Files
+
+Five files moved from `apps/web/src/app/(dashboard)` to the corresponding paths
+under `apps/web/src/app/dashboard`: layout, dashboard page, batch intake, dynamic
+batch detail, and settings.
+
+## 13. Deleted Files
+
+No functionality was deleted. The five obsolete route-group paths were removed
+as part of the moves.
+
+## 14. Added Dependencies
+
+None.
+
+## 15. Removed Dependencies
+
+None.
+
+## 16. Validation Commands
+
+```text
+go fmt ./...
+gofmt -l .
+go vet ./...
+go test ./...
+python -m py_compile main.py zip_safety.py
+python -m unittest discover -s tests
+python -c "import main; import zip_safety"
+npx tsc --noEmit
+npm run build
+git diff --check
+```
+
+## 17. Validation Results
+
+- Passed: Go formatting check, exit 0.
+- Passed: `go vet ./...`, exit 0.
+- Passed: all Go tests, exit 0, including health and lifecycle tests.
+- Passed: Python compilation, exit 0.
+- Passed: seven existing Python tests, exit 0.
+- Failed locally: worker import smoke test. Acer's global Python 3.10 environment
+  loads an incompatible TensorFlow/protobuf combination through transformers.
+  The clean Python 3.11 Docker build is the authoritative import environment.
+- Passed: TypeScript check, exit 0.
+- Passed: Next.js production build, exit 0, with all five intended routes.
+- Not applicable: no frontend test script exists.
+- Not applicable: no PowerShell file was changed.
+- Passed: Git whitespace check, exit 0.
+
+## 18. Authoritative Docker Validation
+
+GitHub-hosted Ubuntu is now the authoritative Docker environment. The
+`Docker Runtime Verification` workflow validates Compose metadata, builds all three
+application images, starts the canonical six-service stack, verifies dependency
+health, API health semantics, web routes, worker imports/FFmpeg/connectivity/stability,
+Redis readiness degradation and recovery, SIGTERM handling, evidence collection, and
+clean shutdown. It records the exact commit, ref, runner, toolchain, run ID, attempt,
+trigger, timings, image inventory, HTTP results, and service state.
+
+The authoritative exact-commit run passed. HP and Acer Docker Desktop evidence remains
+optional supplemental Windows QA.
+
+## 19. Kanban Updates
+
+Project #19 was treated as authoritative. Issues #16, #21, #28, and #41 were
+updated for worker, route, health, and Compose work. Issues #79 through #83 were
+created for the Work Unit 1 epic, Go lifecycle, configuration inventory, local
+evidence, and runtime verification. Issue #83 now owns the GitHub Actions Docker
+Runtime Verification Gate. Applicable Work Unit 1 cards are eligible for Done with
+the passing run attached. Issue #75 remains Bugged and its unsafe workflow was not
+run.
+
+## 20. Remaining Risks
+
+The worker image is approximately 6.48 GB and cold model caches reached approximately
+1.2 GB. Routine runs depend on external base-image and model hosts; the model cache is
+not persisted across Compose runs. Full media processing, result correctness, and
+resource limits were not tested by this boot/integration gate. GitHub also reports
+Node 20 action-runtime deprecation warnings for the repository's current major action
+versions. PR #84 remains draft and conflicting with `main`.
+
+The first authoritative run, `30405578943` at
+`bd9d1666ab0ef065d6a04dbe37062a0572bc0c20`, passed Compose configuration and
+source-quality jobs but exposed a worker image build defect before runtime:
+`openai-whisper==20231117` imported `pkg_resources` in an isolated build environment
+whose current setuptools no longer supplied it. The worker Dockerfile now pins the
+compatible build tool to `setuptools<81` and installs the already-declared
+requirements without PEP 517 build isolation. The failed run retained artifact
+`docker-runtime-bd9d1666ab0ef065d6a04dbe37062a0572bc0c20`.
+
+The second authoritative run, `30405742248` at
+`255feb9574f6ac3e6e4e68cc1c040a370f758937`, proved the Whisper wheel correction,
+then failed the worker import smoke because the legacy
+`sentence-transformers==2.2.2` declaration allowed incompatible current
+`transformers` and `huggingface-hub` releases. The requirements now constrain those
+existing transitive libraries to the mutually compatible published versions
+`transformers==4.30.2` and `huggingface-hub==0.14.1`. No application capability was
+added. The failed run also retained commit-attributed diagnostics.
+
+The third authoritative run, `30405974575` at
+`b938b16509d56f1b2ec655fd919a59bc3c439095`, proved all three Dockerfile builds,
+worker compilation/imports, and FFmpeg. It then failed in image inventory because
+Buildx Bake loaded unnamed images for Compose services without explicit `image`
+fields. The CI script now applies Compose's deterministic project/service tags during
+Bake and inventories those exact tags before runtime startup.
+
+The fourth authoritative run, `30406447527` at
+`5891ccbd37551e7b0ac73858485eb519197a29d0`, built and inventoried all three
+images, started the real stack, and confirmed PostgreSQL, Redis, Qdrant, and API
+healthy with zero restarts. It then exposed a CI diagnostics formatting defect:
+Docker omits `.State.Health` entirely for the worker, causing a strict Go template
+lookup to fail. State recording now uses a null-safe `jq` projection.
+
+The fifth authoritative run, `30406958540` at
+`ba6ea9df1add4a2642f6d6d8df4fae9210c06901`, passed every implemented assertion,
+including images, health, routes, model boot, readiness degradation/recovery,
+SIGTERM, diagnostics, and shutdown. Artifact review then showed that the worker
+exited when Redis was intentionally interrupted, a stability criterion the script
+had checked only before degradation. The worker now retries Redis queue waits after a
+bounded five-second delay, and the gate asserts it stays running without a restart
+and resumes its blocking queue wait after Redis recovers. A new exact-commit run is
+required before Done.
+
+The sixth authoritative run, `30407483794` at
+`94f1911ec73ef4993ad90a9d81a4f0aece8968a8`, passed every source-quality,
+image-build, runtime, degradation, lifecycle, evidence, and shutdown assertion.
+Artifact `docker-runtime-94f1911ec73ef4993ad90a9d81a4f0aece8968a8`
+(artifact ID `8707270074`, retained through 2026-08-11) confirms:
+
+- API, worker, and web image IDs and sizes; build duration 397 seconds.
+- Python 3.11.15, successful `main`/`zip_safety` imports, FFmpeg 7.1.5, and
+  worker dependency connectivity.
+- Whisper `small` and sentence-transformer `all-MiniLM-L6-v2` cold-start caches
+  reaching approximately 1.2 GB; worker queue readiness in about 31 seconds after
+  container start in this run.
+- PostgreSQL, Redis, Qdrant, API, and web healthy with zero restarts.
+- HTTP 200 for live, ready, compatibility health, `/`, and all four dashboard
+  route patterns.
+- During Redis interruption: liveness 200, readiness 503, worker still running
+  with zero restarts; after recovery readiness returned 200 and the worker resumed
+  its blocking queue wait.
+- API SIGTERM exit code 0 and clean removal of all six Compose containers and the
+  network after volume/log evidence collection.
+- A complete successful job summary and commit-attributed diagnostic artifact.
+
+## 21. Deferred Work Unit 2 Risks
+
+Predictable JWT fallback, total upload-size enforcement, authenticated browser
+export, safe API error envelopes, password/email rules, authentication rate
+limiting, and development port exposure remain deferred. No Work Unit 2 security
+claim is made.
+
+## 22. Done Recommendation
+
+**Done.** Source implementation, available local validation, and the authoritative
+exact-commit GitHub Actions Docker runtime evidence pass. Work Unit 2 may now begin as
+a separate scoped increment; the draft PR remains unmerged and conflicting with
+`main`.
