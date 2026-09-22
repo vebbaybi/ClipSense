@@ -2,8 +2,10 @@
 
 Updated on 2026-09-22. PR #85 merged at
 `99cb659243113623b42e6ae6d713977259cbb098`; main CI `35723984517` passed Gates 1-3.
-Work Unit 2.5 observability/security foundation is implemented on a candidate branch,
-pending exact-SHA hosted evidence. See `docs/observability/KAUFMAN_OBSERVABILITY.md`,
+Work Unit 2.5 observability/security foundation is implemented in draft PR #86.
+Initial hosted evidence passed; final candidate evidence and the CONDITIONAL decision
+are tracked in [the Work Unit 2.5 report](audits/WORK_UNIT_2_5_OBSERVABILITY.md).
+No release or Gate 4 acceptance is implied. See `docs/observability/KAUFMAN_OBSERVABILITY.md`,
 `docs/TESTING.md` and `docs/security/SECURE_DEVELOPMENT.md` for scope and open gates.
 The older runtime acceptance record remains below for provenance.
 The integrated candidate `ce9d9929dfec43639a0e1a57d72c0ee10352eb66` passed

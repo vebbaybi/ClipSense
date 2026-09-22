@@ -74,6 +74,8 @@ finally:
     subprocess.run(['docker','compose','start','worker'], check=True, capture_output=True, timeout=40)
 assert 'job.claimed' in result.stderr and 'job.failed' in result.stderr and correlation in result.stderr
 assert 'clipsense_events_total{event="job.failed"} 1.0' in result.stdout
+status, batch_result, _ = http('http://localhost:8080/api/batches/' + batch, headers={'Authorization':'Bearer '+token, 'X-Correlation-ID':correlation})
+assert status == 200 and json.loads(batch_result)['batch']['status'] == 'failed'
 worker_events = [json.loads(line) for line in result.stderr.splitlines() if line.startswith('{')]
 assert all(e['correlation_id'] == correlation for e in worker_events)
 evidence.joinpath('worker-correlation.jsonl').write_text('\n'.join(json.dumps(e) for e in worker_events))

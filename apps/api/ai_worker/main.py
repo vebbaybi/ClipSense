@@ -269,26 +269,26 @@ def main():
 
 
 def execute_job(data):
-        batch_id, name, zip_path = data['id'], data.get('name', data['id']), data['zip_path']
-        context_token = CONTEXT.set(job_context(data))
-        started = time.monotonic()
+    batch_id, name, zip_path = data['id'], data.get('name', data['id']), data['zip_path']
+    context_token = CONTEXT.set(job_context(data))
+    started = time.monotonic()
+    try:
+        process_batch(batch_id, name, Path(zip_path))
+    except Exception:
+        event('job.failed')
         try:
-            process_batch(batch_id, name, Path(zip_path))
+            conn = connect_db()
+            update_status(conn, batch_id, 'failed')
         except Exception:
-            event('job.failed')
-            try:
-                conn = connect_db()
-                update_status(conn, batch_id, 'failed')
-            except Exception:
-                event('dependency.degraded', dependency='database')
-            finally:
-                try:
-                    conn.close()
-                except Exception:
-                    pass
+            event('dependency.degraded', dependency='database')
         finally:
-            job_duration.observe(time.monotonic() - started)
-            CONTEXT.reset(context_token)
+            try:
+                conn.close()
+            except Exception:
+                pass
+    finally:
+        job_duration.observe(time.monotonic() - started)
+        CONTEXT.reset(context_token)
 
 
 if __name__ == "__main__":
