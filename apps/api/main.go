@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/redis/go-redis/v9"
 )
@@ -85,7 +84,8 @@ type Storyline struct {
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatal(err)
+		operationalEvent(context.Background(), "service.failed", slog.String("error_code", startupErrorCode(err)))
+		os.Exit(1)
 	}
 }
 
@@ -129,14 +129,27 @@ func run() error {
 
 	shutdownCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	log.Printf("api listening on %s", server.Addr)
+	metricsListener, err := net.Listen("tcp", getenv("METRICS_ADDR", "127.0.0.1:9091"))
+	if err != nil {
+		listener.Close()
+		return errors.New("metrics listener unavailable")
+	}
+	metricsServer := &http.Server{Handler: metricsHandler(runtimeDependencyChecks()), ReadHeaderTimeout: 5 * time.Second, WriteTimeout: 5 * time.Second}
+	defer metricsServer.Close()
+	go func() {
+		if e := metricsServer.Serve(metricsListener); e != nil && !errors.Is(e, http.ErrServerClosed) {
+			operationalEvent(context.Background(), "service.failed")
+			stop()
+		}
+	}()
+	operationalEvent(context.Background(), "service.started")
 	return serveHTTP(shutdownCtx, server, listener, serverShutdownTimeout)
 }
 
 func newRouter(checks dependencyChecks) http.Handler {
 	r := chi.NewRouter()
+	r.Use(observationMiddleware)
 	r.Use(localDevCORSMiddleware)
-	r.Use(middleware.Recoverer)
 
 	r.Route("/api", func(api chi.Router) {
 		api.Get("/health", readinessHandler(checks))
@@ -180,7 +193,6 @@ func serveHTTP(ctx context.Context, server *http.Server, listener net.Listener, 
 		}
 		return fmt.Errorf("serve HTTP: %w", err)
 	case <-ctx.Done():
-		log.Printf("api shutdown started")
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
@@ -193,7 +205,7 @@ func serveHTTP(ctx context.Context, server *http.Server, listener net.Listener, 
 	if err := <-errCh; err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("serve HTTP during shutdown: %w", err)
 	}
-	log.Printf("api shutdown complete")
+	operationalEvent(context.Background(), "service.stopped")
 	return nil
 }
 
@@ -217,7 +229,8 @@ func localDevCORSMiddleware(next http.Handler) http.Handler {
 		if allowedOrigins[origin] {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-ID, X-Correlation-ID")
+			w.Header().Set("Access-Control-Expose-Headers", "X-Request-ID, X-Correlation-ID")
 			w.Header().Set("Vary", "Origin")
 		}
 
@@ -252,14 +265,14 @@ func readinessHandler(dependencies dependencyChecks) http.HandlerFunc {
 		if err := dependencies.database(ctx); err != nil {
 			checks["database"] = "unavailable"
 			statusCode = http.StatusServiceUnavailable
-			log.Printf("readiness database unavailable: %v", err)
 		}
 		if err := dependencies.redis(ctx); err != nil {
 			checks["redis"] = "unavailable"
 			statusCode = http.StatusServiceUnavailable
-			log.Printf("readiness redis unavailable: %v", err)
 		}
 
+		observeDependency(r.Context(), "database", checks["database"] == "ok")
+		observeDependency(r.Context(), "redis", checks["redis"] == "ok")
 		status := "ok"
 		if statusCode != http.StatusOK {
 			status = "degraded"
@@ -386,6 +399,16 @@ func getBatch(w http.ResponseWriter, r *http.Request) {
 }
 
 func exportBatch(w http.ResponseWriter, r *http.Request) {
+	operationalEvent(r.Context(), "export.started")
+	started := time.Now()
+	success := false
+	defer func() {
+		event := "export.failed"
+		if success {
+			event = "export.completed"
+		}
+		operationalEvent(r.Context(), event, slog.Int64("duration_ms", time.Since(started).Milliseconds()))
+	}()
 	format := r.URL.Query().Get("format")
 	if format == "" {
 		format = "json"
@@ -410,14 +433,16 @@ func exportBatch(w http.ResponseWriter, r *http.Request) {
 			cw.Write([]string{c.ID, c.Title, c.Summary, c.Mood, c.Role, fmt.Sprint(c.Duration)})
 		}
 		cw.Flush()
+		success = cw.Error() == nil
 		return
 	}
 	writeJSON(w, map[string]any{"batch": b, "clips": clips, "storylines": storylines})
+	success = true
 }
 
 func httpError(w http.ResponseWriter, err error) {
-	log.Println("error", err)
-	http.Error(w, err.Error(), http.StatusInternalServerError)
+	operationalEvent(writerContext(w), "http.failed")
+	http.Error(w, "internal_error", http.StatusInternalServerError)
 }
 func writeJSON(w http.ResponseWriter, payload any) { writeJSONStatus(w, http.StatusOK, payload) }
 func writeJSONStatus(w http.ResponseWriter, status int, payload any) {

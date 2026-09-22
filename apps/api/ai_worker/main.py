@@ -16,6 +16,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
 from zip_safety import prepare_upload
+from kaufmanlogger import CONTEXT, event, job_context, measured, safety_event, stage, start_metrics, job_duration
 
 DB_DRIVER = os.getenv('DB_DRIVER', 'postgres')
 DB_PATH = Path(os.getenv('DB_PATH', 'data/clipsense.db'))
@@ -36,10 +37,7 @@ rdb = None
 qclient = None
 
 
-def log(msg: str) -> None:
-    print(f"[worker] {msg}")
-
-
+@measured('models')
 def initialize_runtime():
     global model, embedder, rdb, qclient
     model = whisper.load_model(MODEL_NAME)
@@ -48,6 +46,7 @@ def initialize_runtime():
     qclient = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
 
 
+@measured('persistence')
 def connect_db():
     if DB_DRIVER == 'sqlite':
         return sqlite3.connect(DB_PATH)
@@ -69,6 +68,7 @@ def current_timestamp():
     return 'datetime('"'"'now'"'"')' if DB_DRIVER == 'sqlite' else 'CURRENT_TIMESTAMP'
 
 
+@measured('ffmpeg')
 def extract_audio(video_path: Path, out_wav: Path):
     cmd = [
         'ffmpeg', '-y', '-i', str(video_path),
@@ -77,6 +77,7 @@ def extract_audio(video_path: Path, out_wav: Path):
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+@measured('transcription')
 def transcribe(audio_path: Path) -> str:
     result = model.transcribe(str(audio_path), fp16=False)
     return result['text']
@@ -113,9 +114,9 @@ def ensure_qdrant_collection(vector_size: int):
         collection_name=QDRANT_COLLECTION,
         vectors_config=qmodels.VectorParams(size=vector_size, distance=qmodels.Distance.COSINE)
     )
-    log(f"qdrant collection {QDRANT_COLLECTION} created")
 
 
+@measured('qdrant')
 def upsert_embeddings(clip_rows, embeddings):
     ensure_qdrant_collection(len(embeddings[0]))
     points = []
@@ -153,8 +154,11 @@ def process_batch(batch_id: str, name: str, zip_path: Path):
         conn.commit()
         if not claimed:
             return
+        event('job.claimed')
+        event('processing.started')
         workdir = PROCESS_DIR / batch_id
-        videos = prepare_upload(zip_path, workdir, log)
+        with stage('validation'):
+            videos = prepare_upload(zip_path, workdir, safety_event)
 
         clip_rows = []
         texts = []
@@ -164,8 +168,7 @@ def process_batch(batch_id: str, name: str, zip_path: Path):
             try:
                 extract_audio(video, audio)
                 transcript = transcribe(audio)
-            except Exception as e:
-                log(f"failed {video.name}: {e}")
+            except Exception:
                 transcript = ""
             summary = summarize(transcript)
             mood = classify_mood(transcript)
@@ -185,7 +188,8 @@ def process_batch(batch_id: str, name: str, zip_path: Path):
             conn.commit()
 
         if texts:
-            embeddings = embedder.encode(texts)
+            with stage('embedding'):
+                embeddings = embedder.encode(texts)
             k = 1 if len(texts) == 1 else min(len(texts), max(2, len(texts)//2))
             km = KMeans(n_clusters=k, n_init=10)
             labels = km.fit_predict(embeddings)
@@ -214,7 +218,8 @@ def process_batch(batch_id: str, name: str, zip_path: Path):
         conn.commit()
     finally:
         conn.close()
-    log(f"batch {batch_id} complete")
+    event('processing.completed')
+    event('job.completed')
 
 
 def duration_seconds(video_path: Path) -> float:
@@ -230,14 +235,22 @@ def duration_seconds(video_path: Path) -> float:
 
 
 def main():
+    start_metrics()
+    event('service.started')
     initialize_runtime()
+    redis_degraded = False
     while True:
         try:
             item = rdb.blpop('jobs:batch', timeout=0)
         except redis.RedisError:
-            log("Redis unavailable; retrying in 5 seconds")
+            if not redis_degraded:
+                event('dependency.degraded', dependency='redis')
+            redis_degraded = True
             time.sleep(5)
             continue
+        if redis_degraded:
+            event('dependency.recovered', dependency='redis')
+            redis_degraded = False
         if not item:
             time.sleep(1)
             continue
@@ -249,25 +262,38 @@ def main():
             zip_path = data['zip_path']
             if not isinstance(batch_id, str) or not isinstance(zip_path, str):
                 raise ValueError("job id and zip_path must be strings")
-        except Exception as e:
-            log(f"invalid job payload: {e}")
+        except Exception:
+            event('job.invalid')
             continue
-        log(f"processing batch {batch_id}")
+        execute_job(data)
+
+
+def execute_job(data):
+        batch_id, name, zip_path = data['id'], data.get('name', data['id']), data['zip_path']
+        context_token = CONTEXT.set(job_context(data))
+        started = time.monotonic()
         try:
             process_batch(batch_id, name, Path(zip_path))
-        except Exception as e:
-            log(f"batch {batch_id} failed: {e}")
+        except Exception:
+            event('job.failed')
             try:
                 conn = connect_db()
                 update_status(conn, batch_id, 'failed')
-            except Exception as status_error:
-                log(f"failed to mark batch {batch_id} failed: {status_error}")
+            except Exception:
+                event('dependency.degraded', dependency='database')
             finally:
                 try:
                     conn.close()
                 except Exception:
                     pass
+        finally:
+            job_duration.observe(time.monotonic() - started)
+            CONTEXT.reset(context_token)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        event('service.failed')
+        raise SystemExit(1) from None

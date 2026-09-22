@@ -1,0 +1,42 @@
+name: Security source
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: SAST (blocking rules, Go Python JavaScript TypeScript)
+        run: |
+          mkdir -p artifacts/security
+          git rev-parse HEAD > artifacts/security/source-sha.txt
+          python -m pip install semgrep==1.136.0
+          status=0
+          semgrep scan --metrics=off --config .semgrep.yml --error --json --output artifacts/security/sast.json apps || status=$?
+          python scripts/ci/sanitize-sast.py artifacts/security/sast.json
+          exit "$status"
+      - name: Secret scan (blocking, complete Git history)
+        if: always()
+        run: |
+          mkdir -p artifacts/security
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.28.0 git /repo --redact --report-format json --report-path /repo/artifacts/security/secrets.json
+      - name: Evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: source-security-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/security
+          if-no-files-found: error
+          retention-days: 14

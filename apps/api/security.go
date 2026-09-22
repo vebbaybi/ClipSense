@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/mail"
@@ -46,7 +45,6 @@ func loadSecurityConfig() (securityConfig, error) {
 	raw := os.Getenv("JWT_SECRET")
 	if mode == "development" && raw == "" {
 		c.secret = []byte("clipsense-explicit-local-development-only")
-		log.Print("event=development_auth_secret enabled=true")
 	} else {
 		decoded, err := base64.StdEncoding.Strict().DecodeString(raw)
 		if err != nil || len(decoded) < 32 || len(decoded) > 64 || bytes.Equal(decoded, bytes.Repeat(decoded[:min(1, len(decoded))], len(decoded))) {
@@ -87,7 +85,7 @@ func loadSecurityConfig() (securityConfig, error) {
 }
 
 func publicError(w http.ResponseWriter, status int, code string) {
-	log.Printf("event=request_rejected code=%s status=%d", code, status)
+	recordRejection(status, code)
 	writeJSONStatus(w, status, map[string]string{"error": code})
 }
 

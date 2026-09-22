@@ -1,0 +1,37 @@
+rules:
+  - id: python-dynamic-execution
+    languages: [python]
+    severity: ERROR
+    message: Do not evaluate runtime strings as code.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+  - id: python-shell-execution
+    languages: [python]
+    severity: ERROR
+    message: Avoid shell interpretation of runtime commands.
+    pattern: subprocess.$F(..., shell=True, ...)
+  - id: javascript-dynamic-execution
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Do not execute dynamic JavaScript.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+  - id: go-disabled-tls-validation
+    languages: [go]
+    severity: ERROR
+    message: Certificate verification must remain enabled.
+    pattern: 'tls.Config{..., InsecureSkipVerify: true, ...}'
+  - id: go-shell-command
+    languages: [go]
+    severity: ERROR
+    message: Shell command construction requires security review.
+    pattern-either:
+      - pattern: exec.Command("sh", "-c", ...)
+      - pattern: exec.Command("bash", "-c", ...)
+  - id: javascript-raw-html
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Raw HTML injection requires a reviewed sanitizer.
+    pattern: '<$TAG dangerouslySetInnerHTML={$X} ... />'

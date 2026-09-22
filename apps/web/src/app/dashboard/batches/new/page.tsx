@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import toast, { Toaster } from 'react-hot-toast'
 import { useAuthToken } from '@/hooks/useAuthToken'
+import { requestHeaders, telemetry } from '@/lib/telemetry.mjs'
 
 export default function NewBatchPage() {
   const router = useRouter()
@@ -25,15 +26,24 @@ export default function NewBatchPage() {
     form.append('name', file.name.replace(/\.zip$/i, ''))
 
     const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-    const res = await fetch(`${base}/api/batches`, { method: 'POST', body: form, headers: { Authorization: `Bearer ${token}` } })
+    const headers = requestHeaders()
+    telemetry('upload.started', { correlation_id: headers['X-Correlation-ID'] })
+    try {
+    const res = await fetch(`${base}/api/batches`, { method: 'POST', body: form, headers: { ...headers, Authorization: `Bearer ${token}` } })
     if (res.ok) {
       const data = await res.json()
       toast.success('Batch uploaded')
       router.push(`/dashboard/batches/${data.batch.id}`)
     } else {
-      toast.error(await res.text())
+      telemetry('upload.rejected', { correlation_id: headers['X-Correlation-ID'], category: res.status === 413 ? 'too_large' : 'invalid' })
+      toast.error(`Upload failed (${res.status})`)
     }
+    } catch {
+      telemetry('upload.rejected', { correlation_id: headers['X-Correlation-ID'], category: 'network' })
+      toast.error('Upload unavailable')
+    } finally {
     setUploading(false)
+    }
   }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'application/zip': ['.zip'] } })

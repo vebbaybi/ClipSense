@@ -1,0 +1,35 @@
+groups:
+  - name: clipsense-foundation
+    rules:
+      - alert: ClipSenseServiceUnavailable
+        expr: up{job=~"clipsense-.*"} == 0
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: "ClipSense telemetry target unavailable"
+          runbook: "docs/operations/INCIDENT_DIAGNOSTICS.md#service-and-dependencies"
+      - alert: ClipSenseDependencyUnavailable
+        expr: clipsense_dependency_up == 0
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: "API dependency unavailable"
+          runbook: "docs/operations/INCIDENT_DIAGNOSTICS.md#service-and-dependencies"
+      - alert: ClipSenseCleanupFailure
+        expr: increase(clipsense_events_total{event="upload.cleanup.failed"}[5m]) > 0
+        labels: {severity: warning}
+        annotations:
+          summary: "Upload cleanup needs operator reconciliation"
+          runbook: "docs/operations/INCIDENT_DIAGNOSTICS.md#storage-and-cleanup"
+      - alert: ClipSenseJobFailure
+        expr: increase(clipsense_events_total{event="job.failed"}[5m]) > 0
+        labels: {severity: warning}
+        annotations:
+          summary: "At least one worker job failed; inspect correlated logs"
+          runbook: "docs/operations/INCIDENT_DIAGNOSTICS.md#stuck-batch"
+      - alert: ClipSenseStorageExhausted
+        expr: clipsense_storage_available_bytes == 0
+        labels: {severity: critical}
+        annotations:
+          summary: "Processing filesystem has no available space"
+          runbook: "docs/operations/INCIDENT_DIAGNOSTICS.md#storage-and-cleanup"

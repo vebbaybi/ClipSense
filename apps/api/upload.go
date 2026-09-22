@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -36,9 +35,9 @@ func uploadFailure(w http.ResponseWriter, err error) {
 	publicError(w, 400, "invalid_upload")
 }
 
-func removeUpload(file string) {
+func removeUpload(ctx context.Context, file string) {
 	if err := os.Remove(file); err != nil && !os.IsNotExist(err) {
-		log.Print("event=upload_cleanup_failed")
+		operationalEvent(ctx, "upload.cleanup.failed")
 	}
 }
 
@@ -90,7 +89,7 @@ func createBatch(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		out.Close()
 		if !transferred {
-			removeUpload(dest)
+			removeUpload(r.Context(), dest)
 		}
 	}()
 	name := ""
@@ -166,6 +165,9 @@ func createBatch(w http.ResponseWriter, r *http.Request) {
 		name = filename
 	}
 	id := uuid.NewString()
+	d := diagnosticContext(r.Context())
+	d.BatchID = id
+	ctx = context.WithValue(ctx, diagnosticKey{}, d)
 	now := time.Now().UTC()
 	_, err = db.ExecContext(ctx, `INSERT INTO batches (id,user_id,name,status,zip_path,clip_count,duration_seconds,created_at,updated_at) VALUES ($1,$2,$3,'pending',$4,0,0,$5,$6)`, id, currentUserID(r), name, dest, now, now)
 	if err != nil {
@@ -173,12 +175,12 @@ func createBatch(w http.ResponseWriter, r *http.Request) {
 		defer cleanupCancel()
 		if _, cleanupErr := db.ExecContext(cleanupCtx, `DELETE FROM batches WHERE id=$1 AND status='pending'`, id); cleanupErr != nil {
 			transferred = true // Retain under the quota until the ambiguous row is reconciled.
-			log.Printf("event=upload_record_cleanup_failed batch_id=%s", id)
+			operationalEvent(ctx, "upload.cleanup.failed")
 		}
 		publicError(w, 503, "upload_unavailable")
 		return
 	}
-	payload, _ := json.Marshal(map[string]string{"id": id, "name": name, "zip_path": dest})
+	payload, _ := json.Marshal(map[string]string{"id": id, "name": name, "zip_path": dest, "request_id": d.RequestID, "correlation_id": d.CorrelationID})
 	qctx, qcancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer qcancel()
 	if err = rdb.RPush(qctx, "jobs:batch", payload).Err(); err != nil {
@@ -189,7 +191,7 @@ func createBatch(w http.ResponseWriter, r *http.Request) {
 		result, cleanupErr := db.ExecContext(cleanupCtx, `UPDATE batches SET status='failed',zip_path='',updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND status='pending'`, id)
 		if cleanupErr != nil {
 			transferred = true
-			log.Printf("event=upload_handoff_reconciliation_required batch_id=%s", id)
+			operationalEvent(ctx, "upload.cleanup.failed")
 		} else if n, e := result.RowsAffected(); e != nil || n == 0 {
 			transferred = true
 		}
@@ -197,6 +199,8 @@ func createBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	transferred = true
+	operationalEvent(ctx, "job.enqueued")
+	operationalEvent(ctx, "upload.accepted")
 	writeJSON(w, map[string]any{"batch": Batch{ID: id, UserID: currentUserID(r), Name: name, Status: "pending", CreatedAt: now, UpdatedAt: now}})
 }
 
