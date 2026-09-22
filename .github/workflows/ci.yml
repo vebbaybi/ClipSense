@@ -43,6 +43,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  isolation:
+    name: Gate 4 real Postgres isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: gate4
+          POSTGRES_DB: clipsense_gate4
+          POSTGRES_PASSWORD: ${{ github.run_id }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gate4 -d clipsense_gate4"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+      - name: Prove ownership against real Postgres
+        env:
+          GATE4_TEST_DATABASE_URL: postgres://gate4:${{ github.run_id }}@127.0.0.1:5432/clipsense_gate4?sslmode=disable
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate4
+          git rev-parse HEAD > artifacts/gate4/source-sha.txt
+          test -z "$(gofmt -l apps/api/isolation_integration_test.go)"
+          cd apps/api
+          go test -count=1 -v -run '^TestGate4PostgresIsolation$' ./... | tee ../../artifacts/gate4/isolation.txt
+      - name: Retain ownership evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gate4-isolation-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/gate4
+          if-no-files-found: error
+          retention-days: 14
   api:
     name: Go API
     runs-on: ubuntu-latest
