@@ -2,12 +2,18 @@
 
 Updated on 2026-09-22. PR #85 merged at
 `99cb659243113623b42e6ae6d713977259cbb098`; main CI `35723984517` passed Gates 1-3.
-Work Unit 2.5 observability/security foundation is implemented in draft PR #86.
-Initial hosted evidence passed; final candidate evidence and the CONDITIONAL decision
+Work Unit 2.5 observability/security foundation merged through PR #86 at
+`4b07b7108bfccfb3dcd220783950a8bda8e9e771`; main CI `35735117287` and source security
+`35735117288` passed. Candidate evidence and the CONDITIONAL decision
 are tracked in [the Work Unit 2.5 report](audits/WORK_UNIT_2_5_OBSERVABILITY.md).
 No release or Gate 4 acceptance is implied. See `docs/observability/KAUFMAN_OBSERVABILITY.md`,
 `docs/TESTING.md` and `docs/security/SECURE_DEVELOPMENT.md` for scope and open gates.
 The older runtime acceptance record remains below for provenance.
+PR #87 addresses the real-Postgres regression that demonstrated foreign clip disclosure
+through a malformed cross-batch storyline membership. The membership query now restricts
+clips to the authorized batch while preserving valid results and the original regression
+assertion. Hosted verification is required before accepting this fix; full Gate 4,
+including CORS acceptance, remains unaccepted.
 The integrated candidate `ce9d9929dfec43639a0e1a57d72c0ee10352eb66` passed
 [CI and Docker verification](https://github.com/vebbaybi/ClipSense/actions/runs/35644022417).
 See [the acceptance record](audits/GATE_1_RUNTIME_ACCEPTANCE.md) for scope,
