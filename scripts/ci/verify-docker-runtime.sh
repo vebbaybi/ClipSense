@@ -160,7 +160,7 @@ case "$mode" in
       echo "Production API started without signing material." >&2
       exit 1
     fi
-    grep -q 'JWT_SECRET must encode' "$evidence_dir/auth-config-fail-closed.txt"
+  grep -q 'service.failed' "$evidence_dir/auth-config-fail-closed.txt"
     append_summary ""
     append_summary "## Image build"
     append_summary ""
@@ -233,6 +233,9 @@ case "$mode" in
     record_service_state "redis-stopped"
     request "degraded-live" "http://localhost:8080/api/health/live" "200"
     request "degraded-ready" "http://localhost:8080/api/health/ready" "503"
+    if [[ "${COMPOSE_PROFILES:-}" == *observability* ]]; then
+      compose exec -T worker python -c 'import urllib.request; data=urllib.request.urlopen("http://api:9091/metrics", timeout=5).read().decode(); assert "clipsense_dependency_up{dependency=\"redis\"} 0" in data; print(data)' > "$evidence_dir/redis-degraded-metrics.txt"
+    fi
     worker_running="$(docker inspect --format '{{.State.Running}}' "$worker_id")"
     worker_restart_during_degradation="$(docker inspect --format '{{.RestartCount}}' "$worker_id")"
     [[ "$worker_running" == "true" && "$worker_restart_before" == "$worker_restart_during_degradation" ]]

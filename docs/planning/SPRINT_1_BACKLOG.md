@@ -69,6 +69,20 @@ reliability, broad dependency modernization and backup/restore remain separate.
 | CS-037 | Add synthetic tiny-media Compose smoke test for register/upload/process/review/export | Performance/load testing | All preceding repairs, Docker, FFmpeg | Repeatable test passes twice from clean state | Model runtime/time | 8 | QA/All | Ready |
 | CS-035 | Make processing stages idempotent and define partial-failure cleanup for smoke path | Temporal adoption | Migration/job contract decision | Requeued job creates no duplicate clips/storylines; failure test | Cross-store consistency | 8 | Processor/API | Needs Refinement |
 
+### Work Unit 2.5: Bounded DevSecOps And Kaufman Observability
+
+Baseline: merged PR #85, `99cb659243113623b42e6ae6d713977259cbb098`, main CI
+`35723984517` passed. Gates 1-3 remain the regression contract; Gate 4 not started.
+Status: Review / QA, pending exact-candidate hosted runtime/security evidence.
+CS-048 (#48) subset: structured redacted events, cross-job correlation, bounded
+metrics, local Prometheus/Grafana, rules/runbook and focused telemetry tests.
+Broader analytics, alert delivery, full tracing and incident acceptance remain open.
+Related security/testing work: source/dependency/image scans, SBOM and explicit
+polyglot test architecture. Scan execution does not grant release approval.
+See `docs/audits/WORK_UNIT_2_5_TRUTH.md` and the candidate PR for tested SHA/run,
+scan artifacts, validation outcomes and final PASS/CONDITIONAL/FAIL decision.
+No parent story or later gate is marked Done by this implementation.
+
 ## Sprint Guardrails
 
 - IDs above refer to broader live GitHub stories, not independently completed

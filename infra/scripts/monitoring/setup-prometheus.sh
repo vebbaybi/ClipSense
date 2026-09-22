@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Placeholder monitoring setup: would install Prometheus/Grafana via docker compose extensions.
-echo "TODO: Add Prometheus/Grafana stack."
+cd "$(git rev-parse --show-toplevel)"
+test "${#GRAFANA_ADMIN_PASSWORD}" -ge 16
+docker compose --profile observability up -d prometheus grafana

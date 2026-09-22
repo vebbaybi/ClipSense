@@ -1,11 +1,18 @@
 # ClipSense Current State
 
-Updated on 2026-09-21 for Gate 1 runtime acceptance. PR #84 is merged.
+Updated on 2026-09-22. PR #85 merged at
+`99cb659243113623b42e6ae6d713977259cbb098`; main CI `35723984517` passed Gates 1-3.
+Work Unit 2.5 observability/security foundation is implemented in draft PR #86.
+Initial hosted evidence passed; final candidate evidence and the CONDITIONAL decision
+are tracked in [the Work Unit 2.5 report](audits/WORK_UNIT_2_5_OBSERVABILITY.md).
+No release or Gate 4 acceptance is implied. See `docs/observability/KAUFMAN_OBSERVABILITY.md`,
+`docs/TESTING.md` and `docs/security/SECURE_DEVELOPMENT.md` for scope and open gates.
+The older runtime acceptance record remains below for provenance.
 The integrated candidate `ce9d9929dfec43639a0e1a57d72c0ee10352eb66` passed
 [CI and Docker verification](https://github.com/vebbaybi/ClipSense/actions/runs/35644022417).
 See [the acceptance record](audits/GATE_1_RUNTIME_ACCEPTANCE.md) for scope,
 warning classification, and the final-main sign-off process. Gates 2/3 implementation
-is now in Review / QA on the auth/upload candidate branch; see
+is accepted for its bounded scope; see
 [Work Unit 2](audits/WORK_UNIT_2_AUTH_UPLOAD.md). Later gates remain unaccepted.
 
 ## Implemented
@@ -54,7 +61,7 @@ is now in Review / QA on the auth/upload candidate branch; see
 - Durable processing workflow, retry/DLQ, stage history, or failure reason storage.
 - Transcript correction, real media review, semantic search UI, editable storylines,
   editor-ready exports, deletion/retention controls, billing, or cloud deployment.
-- Integration and browser end-to-end tests.
+- Complete creator browser end-to-end tests (focused integration probes do exist).
 
 ## Public Routes
 
@@ -74,8 +81,8 @@ The API reads `API_ADDR`, `DATABASE_URL`, `REDIS_URL`, `UPLOAD_DIR`,
 `PROCESS_DIR`, `WHISPER_MODEL`, `REDIS_URL`, `QDRANT_HOST`, `QDRANT_PORT`, and
 `QDRANT_COLLECTION`. The browser build reads `NEXT_PUBLIC_API_URL`.
 
-`DB_DRIVER` in the API container is unused, and the worker's `UPLOAD_DIR` is
-currently read but unused. Browser-facing `NEXT_PUBLIC_API_URL` must remain a
+`DB_DRIVER` in the API container is unused; worker `UPLOAD_DIR` validates storage
+ownership. Browser-facing `NEXT_PUBLIC_API_URL` must remain a
 host-reachable URL, while Compose service URLs use container service names.
 `APP_ENV=development` explicitly permits a documented local-only signing key;
 otherwise `JWT_SECRET` must contain base64-encoded 32-64 random bytes. Compose
