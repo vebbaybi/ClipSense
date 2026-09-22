@@ -13,6 +13,7 @@ on:
       - "apps/web/**"
       - "scripts/ci/**"
       - "infra/observability/**"
+      - "infra/scripts/monitoring/**"
       - ".env.example"
       - "docs/adr/0015-github-actions-docker-verification.md"
       - "docs/audits/SPRINT_1_WORK_UNIT_1_REPORT.md"
@@ -28,6 +29,7 @@ on:
       - "apps/web/**"
       - "scripts/ci/**"
       - "infra/observability/**"
+      - "infra/scripts/monitoring/**"
       - ".env.example"
       - "docs/adr/0015-github-actions-docker-verification.md"
       - "docs/audits/SPRINT_1_WORK_UNIT_1_REPORT.md"
@@ -128,10 +130,12 @@ jobs:
           python ../../scripts/ci/security-policy.py npm npm-audit.json
 
       - name: Upload web audit evidence
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: web-audit-${{ github.sha }}
           path: apps/web/npm-audit.json
+          if-no-files-found: error
           retention-days: 14
 
   compose:
