@@ -347,7 +347,7 @@ func loadBatch(uid, id string) (Batch, []Clip, []Storyline, error) {
 			return b, nil, nil, err
 		}
 		crows, err := db.Query(`SELECT clips.id, clips.batch_id, clips.filename, clips.title, clips.summary, clips.transcript, clips.mood, clips.role, clips.topic, clips.duration_seconds, clips.created_at
-             FROM storyline_clips JOIN clips ON clips.id = storyline_clips.clip_id WHERE storyline_clips.storyline_id = $1 ORDER BY storyline_clips.position`, s.ID)
+             FROM storyline_clips JOIN clips ON clips.id = storyline_clips.clip_id WHERE storyline_clips.storyline_id = $1 AND clips.batch_id = $2 ORDER BY storyline_clips.position`, s.ID, id)
 		if err != nil {
 			return b, nil, nil, err
 		}
