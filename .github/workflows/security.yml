@@ -23,6 +23,8 @@ jobs:
           mkdir -p artifacts/security
           git rev-parse HEAD > artifacts/security/source-sha.txt
           python -m pip install semgrep==1.136.0
+          semgrep scan --metrics=off --test --config .semgrep.yml scripts/ci/sast-fixtures
+          python scripts/ci/test-security-policy.py
           status=0
           semgrep scan --metrics=off --config .semgrep.yml --error --json --output artifacts/security/sast.json apps || status=$?
           python scripts/ci/sanitize-sast.py artifacts/security/sast.json

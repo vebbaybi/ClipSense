@@ -2,7 +2,8 @@
 
 Required: timestamp (UTC), level, service, environment, version, event.
 API/worker version is a 40-character build SHA or `unknown`; deploy tooling supplies
-SOURCE_SHA. Browser diagnostics are local and have no authenticated build identity.
+SOURCE_SHA. Web image build receives the same SHA through NEXT_PUBLIC_BUILD_SHA.
+Version fields aid attribution but are not cryptographic build identity.
 Optional: request_id, correlation_id, batch_id (canonical UUIDs); operation (fixed
 API route); stage (fixed enum); duration_ms (nonnegative); status (HTTP code);
 dependency (database/redis/qdrant), retry_count (only when actually known).

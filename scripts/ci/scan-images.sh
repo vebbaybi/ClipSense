@@ -11,6 +11,7 @@ for service in api worker web; do
   docker run --rm -v trivy-cache:/root/.cache -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/artifacts/security:/evidence" \
     "$trivy_image" image --timeout 15m --parallel 2 --format cyclonedx --output "/evidence/$service.cdx.json" "$image"
   python scripts/ci/security-policy.py container "artifacts/security/$service.json"
+  python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["bomFormat"] == "CycloneDX" and d.get("components")' "artifacts/security/$service.cdx.json"
   docker inspect --format '{{.Id}} user={{.Config.User}} created={{.Created}}' "$image" > "artifacts/security/$service-image.txt"
 done
 # Audit the actual resolved worker environment without changing that environment.

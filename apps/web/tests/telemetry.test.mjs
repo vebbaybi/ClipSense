@@ -4,7 +4,7 @@ import {telemetryRecord, requestHeaders} from '../src/lib/telemetry.mjs';
 
 test('browser events discard secrets, responses and uncontrolled fields', () => {
   const record = telemetryRecord('upload.rejected', {password:'secret', token:'secret', response:'private transcript', category:'Bearer secret', correlation_id:'bad\nfield'});
-  assert.deepEqual(Object.keys(record).sort(), ['event','level','service','timestamp']);
+  assert.deepEqual(Object.keys(record).sort(), ['environment','event','level','service','timestamp','version']);
   assert.equal(telemetryRecord('attacker.event', {}), null);
   assert.equal(JSON.stringify(record).includes('secret'), false);
 });
