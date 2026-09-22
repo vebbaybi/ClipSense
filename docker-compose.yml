@@ -52,6 +52,11 @@ services:
       context: ./apps/api
       dockerfile: Dockerfile
     environment:
+      - APP_ENV=${APP_ENV:-production}
+      - JWT_SECRET=${JWT_SECRET:-}
+      - AUTH_MAX_ATTEMPTS=${AUTH_MAX_ATTEMPTS:-10}
+      - AUTH_WINDOW_SECONDS=${AUTH_WINDOW_SECONDS:-60}
+      - MAX_UPLOAD_REQUEST_BYTES=${MAX_UPLOAD_REQUEST_BYTES:-210763776}
       - API_ADDR=:8080
       - DB_DRIVER=postgres
       - DATABASE_URL=postgres://clipsense:clipsense@postgres:5432/clipsense?sslmode=disable

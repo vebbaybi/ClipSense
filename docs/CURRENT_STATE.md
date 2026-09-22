@@ -4,11 +4,13 @@ Updated on 2026-09-21 for Gate 1 runtime acceptance. PR #84 is merged.
 The integrated candidate `ce9d9929dfec43639a0e1a57d72c0ee10352eb66` passed
 [CI and Docker verification](https://github.com/vebbaybi/ClipSense/actions/runs/35644022417).
 See [the acceptance record](audits/GATE_1_RUNTIME_ACCEPTANCE.md) for scope,
-warning classification, and the final-main sign-off process. Work Unit 2 is unstarted.
+warning classification, and the final-main sign-off process. Gates 2/3 implementation
+is now in Review / QA on the auth/upload candidate branch; see
+[Work Unit 2](audits/WORK_UNIT_2_AUTH_UPLOAD.md). Later gates remain unaccepted.
 
 ## Implemented
 
-- Next.js 14 App Router web source with login/register, batch list, ZIP submission,
+- Next.js 15.5.24 App Router web source with login/register, batch list, ZIP submission,
   batch detail, basic storyline display, and static settings.
 - Go/chi API with separate liveness and dependency readiness, custom JWT
   registration/login, protected batch routes,
@@ -31,12 +33,13 @@ warning classification, and the final-main sign-off process. Work Unit 2 is unst
 
 ## Partially Implemented Or Defective
 
-- Build dependency audit reported 14 vulnerabilities, including one critical.
+- Targeted auth/HTTP dependency fixes reduce the npm audit from 14 to eight findings.
   Runtime acceptance does not establish dependency security or release readiness.
 
 - The export endpoint is protected, but the browser anchor cannot attach its token.
-- `ParseMultipartForm` does not enforce the intended total request byte limit.
-- Compose omits `JWT_SECRET`, causing the API's `dev-secret` fallback.
+- Auth/upload controls are implemented with focused tests; hosted exact-candidate
+  acceptance is tracked in the Work Unit 2 PR. Media validation occurs in the worker
+  before analysis, not synchronously in the HTTP response.
 - Processing jobs are removed before acknowledgement and are not idempotent.
 - Schema changes are unversioned startup DDL.
 - The web app has no automatic processing-status refresh.
@@ -74,8 +77,11 @@ The API reads `API_ADDR`, `DATABASE_URL`, `REDIS_URL`, `UPLOAD_DIR`,
 `DB_DRIVER` in the API container is unused, and the worker's `UPLOAD_DIR` is
 currently read but unused. Browser-facing `NEXT_PUBLIC_API_URL` must remain a
 host-reachable URL, while Compose service URLs use container service names.
-`JWT_SECRET` still has a predictable development fallback; secret enforcement is
-a Work Unit 2 blocker and this stack is not production-secure.
+`APP_ENV=development` explicitly permits a documented local-only signing key;
+otherwise `JWT_SECRET` must contain base64-encoded 32-64 random bytes. Compose
+defaults to production-like fail-closed behavior. Copying `.env.example` opts into
+local development. Limits and deployment qualifications are in the Work Unit 2
+report. This stack is still not accepted as production-secure.
 
 ## Health And Lifecycle
 

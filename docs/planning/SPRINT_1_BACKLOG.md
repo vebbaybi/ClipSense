@@ -35,21 +35,33 @@ Evidence: `docs/audits/SPRINT_1_WORK_UNIT_1_REPORT.md`.
 
 ### Work Unit 2: Security And Upload Hardening
 
-Status: **Not started; requires separate authorization**. No security or upload
-hardening is authorized by the current runtime acceptance task.
+Status: **Review / QA - Gates 2 and 3 implemented; exact-candidate hosted acceptance required**.
+User authorization covers authentication and upload hardening only. See
+[Work Unit 2 evidence](../audits/WORK_UNIT_2_AUTH_UPLOAD.md) and its candidate PR
+for exact tested commit, CI/Docker runs, commands and final gate decisions.
 
-Known inputs include JWT secret enforcement, upload hard limits, authenticated
-export repair, safe API error responses, and the other explicitly approved Work
-Unit 2 items. Work Unit 1 does not implement them.
+Intermediate candidate `156c6ea2d04d9c50a6b841bc3cce9c305049387c` passed all
+five jobs in [run 35649979087](https://github.com/vebbaybi/ClipSense/actions/runs/35649979087),
+including the preserved runtime baseline and new HTTP/media boundary checks.
+Final follow-up adds ambiguous database-insert cleanup and an image-level missing-key
+check. Its exact-SHA result and acceptance decision are recorded on
+[PR #85](https://github.com/vebbaybi/ClipSense/pull/85); the intermediate run does not
+certify that follow-up. CS-015 still needs shared UI limit presentation; CS-030
+still includes production database/DSN guardrails. Neither parent story is closed.
+
+Implemented scope: explicit signing-key configuration, strict credentials/tokens,
+bounded auth attempts, request/archive/media validation, scoped cleanup and safe
+auth/upload errors. Authenticated export, cross-user/CORS acceptance, processing
+reliability, broad dependency modernization and backup/restore remain separate.
 
 | ID | Value and exact scope | Out of scope | Dependencies | Acceptance and validation | Risk | Estimate | Owner | Status |
 |---|---|---|---|---|---|---:|---|---|
 | CS-017 | Runtime subset: repair worker packaging/import/startup | Job payload validation and actual enqueue/consume | Docker Engine | Image/import/startup and Redis recovery passed in run 35644022417 | Large ML image/download | 2 | Processor | Runtime subset accepted; parent Review / QA |
 | CS-022 | Runtime subset: repair dashboard route contract | Full result review and authenticated browser E2E | Web build | Build and five HTTP route checks passed in run 35644022417; links reviewed | App Router behavior | 3 | Web | Routing subset accepted; parent Review / QA |
 | CS-032 | Download CSV through authenticated client adapter | New formats | Route/auth baseline | Authorized succeeds; unauthenticated fails; browser test | Token exposure | 2 | Web/API | Ready |
-| CS-015 | Enforce total HTTP body limit, ZIP type/signature, partial-file cleanup | Direct video | API tests | Oversize returns 413; invalid type 4xx; disk remains clean | Proxy/body semantics | 3 | API | Ready |
-| CS-030 | Require non-development JWT secret outside explicit local mode | OIDC migration | Configuration design | Startup fails securely; Compose uses non-default secret; tests | Local UX break | 2 | API/Ops | Ready |
-| CS-028 | Replace raw internal errors with stable safe JSON errors | Full contract generation | Error taxonomy | Validation/auth/conflict/server tests; logs retain cause | Client compatibility | 3 | API/Web | Ready |
+| CS-015 | Enforce total HTTP body limit, ZIP type/signature, partial-file cleanup | Direct video | API tests | Focused tests pass; exact-candidate hosted HTTP/media verification required | Proxy/body semantics | 3 | API | Review / QA; Gate 3 PR evidence required |
+| CS-030 | Require non-development JWT secret outside explicit local mode | OIDC migration | Configuration design | Config/token/limiter tests pass; exact-candidate hosted auth verification required | Local UX break | 2 | API/Ops | Review / QA; Gate 2 PR evidence required |
+| CS-028 | Replace raw internal errors with stable safe JSON errors | Full contract generation | Error taxonomy | Auth/upload errors covered; other endpoint error contracts remain open | Client compatibility | 3 | API/Web | Auth/upload subset Review / QA; broader scope open |
 | CS-029 | Add liveness/readiness split, HTTP timeouts, graceful shutdown, request IDs | Full telemetry | API refactor | Unit tests, health, Redis recovery, SIGTERM/restart passed in run 35644022417; request IDs remain | Startup sequencing | 5 | API/Ops | Runtime subset accepted; request IDs open |
 | CS-043 | Add Compose health checks/dependency conditions and repair deploy path | Production deployment | Prior service health work | Compose config and hosted Linux startup passed in run 35644022417; deploy-path repair remains | Local Docker unavailable; hosted CI authoritative | 5 | Ops | Compose subset accepted; deployment repair open |
 | CS-047 | Replace SQLite copy scripts with Postgres backup/restore; document Qdrant gap | Automated disaster recovery | Compose database | Disposable backup/restore proves row recovery | Data loss if misused | 5 | Ops/Data | Ready |

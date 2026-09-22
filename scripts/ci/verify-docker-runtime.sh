@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# Runtime smoke uses explicitly opted-in development auth, never a production fallback.
+export APP_ENV="${APP_ENV:-development}"
+
 mode="${1:-}"
 evidence_dir="${EVIDENCE_DIR:-artifacts/docker-runtime}"
 summary_file="$evidence_dir/run-summary.md"
@@ -153,6 +156,11 @@ case "$mode" in
     compose run --rm --no-deps worker sh -ec \
       'python -m py_compile main.py zip_safety.py && python -c "import main; import zip_safety" && ffmpeg -version | head -n 1' |
       tee "$evidence_dir/worker-build-smoke.txt"
+    if compose run --rm --no-deps -e APP_ENV=production -e JWT_SECRET= api > "$evidence_dir/auth-config-fail-closed.txt" 2>&1; then
+      echo "Production API started without signing material." >&2
+      exit 1
+    fi
+    grep -q 'JWT_SECRET must encode' "$evidence_dir/auth-config-fail-closed.txt"
     append_summary ""
     append_summary "## Image build"
     append_summary ""

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM golang:1.21-alpine AS build
+FROM golang:1.26.6-alpine AS build
 WORKDIR /src
 COPY . .
 RUN go mod tidy && go build -o /out/api
